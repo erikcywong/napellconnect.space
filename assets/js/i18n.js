@@ -291,6 +291,8 @@
     "api.write": "写入",
     "api.docs": "交互式文档",
     "api.docs.d": "FastAPI 自动生成的 OpenAPI 界面。",
+    "api.liveonly": "由实时 API 进程提供，静态构建下不可用",
+    "api.docs.offline": "这三个端点由 API 进程直接提供。当前为静态只读快照构建，因此在此不可用 —— 下方端点清单完整。",
 
     /* analytics */
     "ana.lede": "生产强度、按批次的资源消耗，以及唯一还会显著影响碳数字的变量：电力结构。",
@@ -395,6 +397,24 @@
     try { return localStorage.getItem(KEY) || DEFAULT; } catch (e) { return DEFAULT; }
   }
 
+  /* data-en-title / data-en-aria-label  →  dataset.enTitle / dataset.enAriaLabel.
+     The original form was "en" + attr, which produced "entitle" — a key that
+     matches no attribute, so the authored English was never found and the
+     attribute got written as an empty string. Since nothing used
+     data-i18n-attr at the time, the fault stayed dormant. */
+  function enKey(attr) {
+    var camel = attr.replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); });
+    return "en" + camel.charAt(0).toUpperCase() + camel.slice(1);
+  }
+
+  function enValue(el, attr) {
+    var v = el.dataset[enKey(attr)];
+    if (v === undefined) v = el.dataset["en" + attr];   // legacy single-word form
+    return v;
+  }
+
+  function setEnValue(el, attr, v) { el.dataset[enKey(attr)] = v; }
+
   /* capture the authored English once, so switching back is lossless */
   function snapshot(root) {
     root.querySelectorAll("[data-i18n]").forEach(function (el) {
@@ -402,10 +422,8 @@
     });
     root.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
       el.dataset.i18nAttr.split(",").forEach(function (spec) {
-        var p = spec.split(":");
-        var attr = p[0].trim();
-        var cache = "en" + attr;
-        if (el.dataset[cache] === undefined) el.dataset[cache] = el.getAttribute(attr) || "";
+        var attr = spec.split(":")[0].trim();
+        if (enValue(el, attr) === undefined) setEnValue(el, attr, el.getAttribute(attr) || "");
       });
     });
     root.querySelectorAll(".en, .zh").forEach(function (el) {
@@ -432,8 +450,8 @@
         var attr = p[0].trim();
         var key = p[1].trim();
         var table = dict[lang];
-        var val = (table && table[key] !== undefined && lang !== DEFAULT) ? table[key] : el.dataset["en" + attr];
-        if (val !== undefined) el.setAttribute(attr, val);
+        var val = (table && table[key] !== undefined && lang !== DEFAULT) ? table[key] : enValue(el, attr);
+        if (val !== undefined && val !== null) el.setAttribute(attr, val);
       });
     });
 

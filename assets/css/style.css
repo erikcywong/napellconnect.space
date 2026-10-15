@@ -219,6 +219,11 @@ section.alt { background: var(--bg-1); border-top: 1px solid var(--line-soft); b
 .btn.good { background: var(--up); border-color: var(--up); color: #04120c; }
 .btn.sm { padding: 6px 13px; font-size: 12.5px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
+/* live-only control on a static build — must follow .btn.* to win the cascade */
+.btn.off, .btn.off:hover, .btn.primary.off:hover {
+  opacity: 0.4; cursor: not-allowed;
+  background: transparent; border-color: var(--line); color: var(--txt-2);
+}
 
 /* -------------------------------------------------------------- inputs --- */
 input, select, textarea {

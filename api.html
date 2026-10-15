@@ -17,7 +17,8 @@
         <h1 data-i18n="api.h">API reference</h1>
         <div class="row">
           <a class="btn sm" href="/docs" target="_blank" data-i18n="api.docs">Interactive docs</a>
-          <a class="btn sm primary" href="/openapi.json" target="_blank">OpenAPI JSON</a>
+          <a class="btn sm primary" href="/openapi.json" target="_blank" data-live-only
+             data-i18n-attr="title:api.liveonly" data-en-title="Served by the live API process">OpenAPI JSON</a>
         </div>
       </div>
       <p class="lede" style="max-width:860px;margin-top:14px" data-i18n="api.lede">
@@ -53,9 +54,17 @@
             reference cannot drift from the implementation.
           </p>
           <div class="row" style="margin-top:12px">
-            <a class="btn sm" href="/docs" target="_blank">/docs</a>
-            <a class="btn sm" href="/redoc" target="_blank">/redoc</a>
-            <a class="btn sm" href="/healthz" target="_blank">/healthz</a>
+            <a class="btn sm" href="/docs" target="_blank" data-live-only
+               data-i18n-attr="title:api.liveonly" data-en-title="Served by the live API process">/docs</a>
+            <a class="btn sm" href="/redoc" target="_blank" data-live-only
+               data-i18n-attr="title:api.liveonly" data-en-title="Served by the live API process">/redoc</a>
+            <a class="btn sm" href="/healthz" target="_blank" data-live-only
+               data-i18n-attr="title:api.liveonly" data-en-title="Served by the live API process">/healthz</a>
+          </div>
+          <div class="note tiny hidden" id="docsOffline" data-i18n="api.docs.offline"
+               style="margin-top:12px">
+            These three endpoints are served by the API process itself. This build is a static
+            read-only snapshot, so they are unavailable here — the reference below is complete.
           </div>
         </div>
       </div>
@@ -203,6 +212,20 @@ assert j["integrity"]["chain_ok"]</pre>
 
   document.addEventListener("DOMContentLoaded", render);
   window.addEventListener("langchange", render);
+
+  /* The OpenAPI console, /redoc and /healthz are served by the API process.
+     On a static build they do not exist, so say so instead of leaving dead
+     links that look like a broken site. */
+  function markLiveOnly(mode) {
+    if (mode !== "snapshot") return;
+    var links = document.querySelectorAll("[data-live-only]");
+    for (var i = 0; i < links.length; i++) {
+      links[i].classList.add("off");
+      links[i].addEventListener("click", function (e) { e.preventDefault(); });
+    }
+    document.getElementById("docsOffline").classList.remove("hidden");
+  }
+  NFApi.onMode(markLiveOnly);
 })();
 </script>
 </body>
