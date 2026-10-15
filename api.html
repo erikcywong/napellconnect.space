@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API reference — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.docs">Docs</div>
+      <div class="between" style="margin-top:10px">
+        <h1 data-i18n="api.h">API reference</h1>
+        <div class="row">
+          <a class="btn sm" href="/docs" target="_blank" data-i18n="api.docs">Interactive docs</a>
+          <a class="btn sm primary" href="/openapi.json" target="_blank">OpenAPI JSON</a>
+        </div>
+      </div>
+      <p class="lede" style="max-width:860px;margin-top:14px" data-i18n="api.lede">
+        The whole front end runs on these endpoints. Writes are attributed through the X-Napell-User
+        header; omit it and the event is attributed to the system identity.
+      </p>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g2-1" style="margin-bottom:16px">
+        <div class="card">
+          <h3 data-i18n="api.auth">Authentication and attribution</h3>
+          <p style="margin-top:12px" data-i18n="api.auth.d">
+            This demo build is offline and unauthenticated so it can be reviewed without credentials.
+            Attribution is still enforced: every write records the actor that performed it, and that
+            actor is hashed into the event.
+          </p>
+          <pre class="code">curl -X POST http://127.0.0.1:8780/api/v1/batches \
+  -H "Content-Type: application/json" \
+  -H "X-Napell-User: erik" \
+  -d '{"module":"JP-01-M02"}'</pre>
+          <div class="note tiny" style="margin-top:14px">
+            For production the header is replaced by a signed JWT carrying the operator's GrowerID,
+            so an event can never be attributed to a party that did not send it.
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="api.docs">Interactive docs</h3>
+          <p style="margin-top:12px" data-i18n="api.docs.d">
+            FastAPI generates a live OpenAPI console from the same code that serves this page, so the
+            reference cannot drift from the implementation.
+          </p>
+          <div class="row" style="margin-top:12px">
+            <a class="btn sm" href="/docs" target="_blank">/docs</a>
+            <a class="btn sm" href="/redoc" target="_blank">/redoc</a>
+            <a class="btn sm" href="/healthz" target="_blank">/healthz</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head">
+          <h3 data-i18n="api.endpoints">Endpoints</h3>
+          <span class="badge" id="epCount">—</span>
+        </div>
+        <div id="groups" style="padding:6px 0"></div>
+      </div>
+
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card">
+          <h3>Python</h3>
+          <pre class="code">import requests
+
+API = "http://127.0.0.1:8780/api/v1"
+H = {"X-Napell-User": "erik"}
+
+# 1. a chamber reports a reading
+requests.post(f"{API}/modules/HK-01-M01/telemetry", headers=H,
+    json={"ec": 1.68, "ph": 5.79, "air_temp_c": 26.1, "attest": True})
+
+# 2. sow a batch into that chamber
+lot = requests.post(f"{API}/batches", headers=H,
+    json={"module": "HK-01-M01"}).json()["batch"]
+
+# 3. drive it through the lifecycle to harvest
+for stage in ["BATCH_GERMINATED", "BATCH_VEG", "BATCH_FLOWERING",
+              "BATCH_FRUITING", "BATCH_HARVESTED"]:
+    r = requests.post(f"{API}/batches/{lot['code']}/advance",
+                      headers=H, json={"stage": stage}).json()
+    if stage == "BATCH_HARVESTED":
+        print("dossiers issued:", list(r["auto_issued_reports"]))
+
+# 4. read the consumer-facing journey
+j = requests.get(f"{API}/consumer/{lot['qr_token']}").json()
+assert j["integrity"]["chain_ok"]</pre>
+        </div>
+        <div class="card">
+          <h3>Behaviour worth knowing</h3>
+          <div class="stack" style="margin-top:12px">
+            <div class="note good-note tiny">
+              <strong>Harvest auto-issues compliance.</strong> Advancing to
+              <span class="mono">BATCH_HARVESTED</span> writes the LCA and the EUDR dossier and anchors
+              both, in the same transaction as the harvest event.
+            </div>
+            <div class="note warn-note tiny">
+              <strong>Stage order is enforced.</strong> Out-of-order advancement returns 409. A batch
+              cannot be roasted before it is milled, and the ledger would show it if it were.
+            </div>
+            <div class="note tiny">
+              <strong>Telemetry attestation is opt-in.</strong> Post with
+              <span class="mono">"attest": true</span> to anchor a reading. Raw streams stay out of the
+              ledger; only periodic digests go in, which keeps the chain readable.
+            </div>
+            <div class="note tiny">
+              <strong>Comparison legs are labelled.</strong> LCA responses carry the aeroponic leg as
+              measured and the conventional leg as a literature baseline, with
+              <span class="mono">baseline_vintage</span> stating where it came from.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+  var GROUPS = [
+    ["Meta and analytics", [
+      ["GET", "/meta", "read", "Capabilities, lifecycle stages, baselines and the EUDR reference."],
+      ["GET", "/overview", "read", "Network roll-up: counts, production, impact deltas, chain integrity."],
+      ["GET", "/network", "read", "Full registry — growers, facilities and chambers in one call."],
+      ["GET", "/analytics/impact", "read", "Per-batch resource intensity plus the network overview."],
+      ["GET", "/analytics/scenario", "read", "Recompute an LCA at a hypothetical renewable share."]
+    ]],
+    ["Identity", [
+      ["GET", "/growers", "read", "Registered growers with derived trust, yield and compliance scores."],
+      ["GET", "/growers/{key}", "read", "A grower with facilities, event volume and financeable estimate."],
+      ["POST", "/growers", "write", "Register a grower. Writes GROWER_REGISTERED."],
+      ["GET", "/facilities", "read", "Facilities with chamber counts and cumulative yield."],
+      ["POST", "/facilities", "write", "Commission a facility. Writes FACILITY_COMMISSIONED."],
+      ["GET", "/modules", "read", "Chambers with setpoints and last telemetry timestamp."],
+      ["POST", "/modules", "write", "Commission a chamber with its climate setpoints."]
+    ]],
+    ["IoT telemetry", [
+      ["GET", "/modules/{key}", "read", "Chamber detail: facility, setpoints, active batch, open alerts."],
+      ["GET", "/modules/{key}/telemetry", "read", "Eight-channel series over a window, with bucketing."],
+      ["POST", "/modules/{key}/telemetry", "write", "Ingest a reading. Optional attest writes the ledger."],
+      ["POST", "/modules/{key}/simulate", "write", "Push deterministic readings forward N hours for demos."],
+      ["GET", "/alerts", "read", "Open (or all) threshold alerts across the network."],
+      ["POST", "/alerts/{id}/ack", "write", "Acknowledge an alert. Deliberately not written to the ledger."]
+    ]],
+    ["Traceability", [
+      ["GET", "/ledger", "read", "Event tail, filterable by entity id or entity type."],
+      ["GET", "/ledger/verify", "read", "Recompute the whole chain and report the first break."],
+      ["GET", "/batches", "read", "Batch list with event counts and dossier flags."],
+      ["POST", "/batches", "write", "Sow a batch into a chamber. Writes BATCH_SOWN."],
+      ["GET", "/batches/{key}", "read", "Full journey: stages, attestations, LCA, EUDR, consumer stats."],
+      ["GET", "/batches/{key}/journey", "read", "Alias of the above, named for intent."],
+      ["POST", "/batches/{key}/advance", "write", "Advance the lifecycle. Harvest auto-issues both dossiers."]
+    ]],
+    ["Compliance", [
+      ["GET", "/batches/{key}/compliance/{kind}", "read", "Issued dossier, or a live preview if not yet filed."],
+      ["POST", "/batches/{key}/compliance/{kind}", "write", "Issue or re-issue EUDR or LCA. Anchors the hash."],
+      ["POST", "/batches/{key}/compliance/lca/preview", "read", "LCA at an arbitrary renewable share, no write."]
+    ]],
+    ["Consumer", [
+      ["GET", "/consumer/{token}", "read", "Public journey for a QR token. No auth, no internal fields."],
+      ["POST", "/consumer/{token}/engage", "write", "Record a scan, or a contribution. Tips write FUND_RECEIVED."],
+      ["GET", "/qr/{token}", "read", "SVG QR code for the batch token."],
+      ["GET", "/projects", "read", "Community programmes with funding progress."]
+    ]],
+    ["Operations", [
+      ["GET", "/healthz", "read", "Liveness plus the current ledger length."],
+      ["POST", "/admin/seed", "write", "Rebuild the demo network. Destructive when force is true."]
+    ]]
+  ];
+
+  function render() {
+    var total = 0;
+    document.getElementById("groups").innerHTML = GROUPS.map(function (g) {
+      total += g[1].length;
+      return '<div style="padding:16px 18px 6px"><div class="eyebrow" style="margin-bottom:10px">' +
+        Fmt.esc(g[0]) + "</div>" + g[1].map(function (e) {
+          var cls = e[0] === "GET" ? "acc" : "ok";
+          return '<div style="display:grid;grid-template-columns:64px 1fr;gap:14px;padding:10px 0;border-bottom:1px solid var(--line-soft)">' +
+            '<div><span class="badge ' + cls + '" style="font-family:var(--mono);font-size:11px">' + e[0] + "</span></div>" +
+            '<div><div class="mono sm" style="color:var(--txt);font-weight:600">' + Fmt.esc(e[1]) + "</div>" +
+            '<div class="tiny dim" style="margin-top:3px">' + Fmt.esc(e[3]) + "</div></div></div>";
+        }).join("") + "</div>";
+    }).join("");
+    document.getElementById("epCount").textContent = total + " endpoints";
+  }
+
+  document.addEventListener("DOMContentLoaded", render);
+  window.addEventListener("langchange", render);
+})();
+</script>
+</body>
+</html>

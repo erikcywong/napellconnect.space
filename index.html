@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Napell Farmer Connect — provable coffee, no land required</title>
+<meta name="description" content="Identity, traceability and compliance network for aeroponic coffee. Sensor evidence in a hash-chained ledger, EUDR due diligence and LCA issued automatically at harvest.">
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <!-- ------------------------------------------------------------- hero -->
+  <section class="hero" style="padding-top:56px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="home.eyebrow">Aeroponic coffee supply-chain network</div>
+      <h1 data-i18n="home.h1">Provable coffee, with no land required.</h1>
+      <p class="lede" data-i18n="home.lede">
+        farmerconnect asks the supply chain to self-report and hopes satellites agree.
+        Aeroponic cultivation deletes the question: no plot, no land conversion, and the
+        environment is written into a tamper-evident chain by the controller, not by a form.
+      </p>
+      <div class="row cta">
+        <a class="btn primary" href="trace.html" data-i18n="home.cta1">Open the ledger</a>
+        <a class="btn" href="consume.html" data-i18n="home.cta2">Try the consumer scan</a>
+        <a class="btn ghost" href="lots.html" data-i18n="nav.lots">Batches</a>
+      </div>
+
+      <div class="hero-kpis" id="heroKpis">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------- live status -->
+  <section class="tight">
+    <div class="wrap">
+      <div class="between" style="margin-bottom:20px">
+        <div>
+          <div class="eyebrow" data-i18n="home.live.eyebrow">Live status</div>
+          <h2 data-i18n="home.live.h">Where the network stands right now</h2>
+        </div>
+        <div class="row">
+          <span class="badge" id="integrityBadge">—</span>
+          <button class="btn sm" id="refreshBtn" data-i18n="c.refresh">Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card">
+          <div class="between" style="margin-bottom:12px">
+            <h3 data-i18n="home.pipeline">Batch pipeline</h3>
+            <a class="sm" href="lots.html" data-i18n="home.viewall">View all</a>
+          </div>
+          <div id="pipeline"><div class="skeleton" style="height:120px"></div></div>
+        </div>
+        <div class="card">
+          <div class="between" style="margin-bottom:12px">
+            <h3 data-i18n="home.alerts">Open alerts</h3>
+            <a class="sm" href="modules.html" data-i18n="home.viewall">View all</a>
+          </div>
+          <div id="alertsBox"><div class="skeleton" style="height:120px"></div></div>
+        </div>
+        <div class="card">
+          <div class="between" style="margin-bottom:12px">
+            <h3 data-i18n="home.recent">Recent ledger events</h3>
+            <a class="sm" href="trace.html" data-i18n="home.viewall">View all</a>
+          </div>
+          <div id="recentEvents"><div class="skeleton" style="height:120px"></div></div>
+        </div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head">
+          <h3 data-i18n="f.platform">Platform</h3>
+          <span class="sm dim" id="prodNote"></span>
+        </div>
+        <div class="chart" id="prodChart" style="height:300px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------- differentiation -->
+  <section class="alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow" data-i18n="home.why.eyebrow">The structural difference</div>
+        <h2 data-i18n="home.why.h">Every other platform proves a negative. We removed the negative.</h2>
+      </div>
+
+      <div class="cmp">
+        <div class="them">
+          <h4 data-i18n="home.why.them">The self-reported approach</h4>
+          <ul>
+            <li data-i18n="home.why.them.1">Data is uploaded by each supply-chain party, in whatever format and cadence suits them.</li>
+            <li data-i18n="home.why.them.2">EUDR means proving no deforestation after 2020, which is inferred from plot polygons and satellite imagery.</li>
+            <li data-i18n="home.why.them.3">Water and land figures are modelled estimates that nobody downstream can reproduce.</li>
+            <li data-i18n="home.why.them.4">Sustainability claims rest on third-party spot audits of a small sample.</li>
+          </ul>
+        </div>
+        <div class="us">
+          <h4 data-i18n="home.why.us">The closed-system approach</h4>
+          <ul>
+            <li data-i18n="home.why.us.1">EC, pH, VPD, PPFD and CO₂ arrive from the chamber controller. Nobody types them in afterwards.</li>
+            <li data-i18n="home.why.us.2">There is no agricultural plot, so land-conversion risk is zero by construction rather than zero by estimate.</li>
+            <li data-i18n="home.why.us.3">Water and energy come from the batch record, so any buyer can recompute them from the same inputs.</li>
+            <li data-i18n="home.why.us.4">Every harvest resolves to a named chamber and the climate series that produced it.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note warn-note" style="margin-top:20px">
+        <strong data-i18n="c.provisional">Provisional</strong> —
+        <span data-i18n="home.honest">closed-environment cultivation is more electricity-intensive than open field, and we show that leg as a deficit rather than hiding it. Water, land, agrochemical and deforestation legs move the other way.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ module tiles -->
+  <section id="pillars">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow" data-i18n="home.pillars.eyebrow">Four modules</div>
+        <h2 data-i18n="home.pillars.h">One continuous line of evidence, from registration to the consumer's phone.</h2>
+      </div>
+      <div class="grid g4">
+        <div class="tile">
+          <div class="ico">01</div>
+          <h3 data-i18n="home.p1.t">Identity</h3>
+          <p data-i18n="home.p1.d">GrowerID binds a self-sovereign identity to facilities, chambers and batches. Credentials come from ledger events, not from a submitted form.</p>
+          <div style="margin-top:14px"><a class="sm" href="network.html" data-i18n="nav.network">Network registry</a></div>
+        </div>
+        <div class="tile">
+          <div class="ico" style="background:var(--up-dim);color:var(--up)">02</div>
+          <h3 data-i18n="home.p2.t">IoT telemetry</h3>
+          <p data-i18n="home.p2.d">Eight sensor channels per chamber, threshold alerts on drift, and a periodic climate digest anchored into the ledger.</p>
+          <div style="margin-top:14px"><a class="sm" href="modules.html" data-i18n="nav.modules">Grow modules</a></div>
+        </div>
+        <div class="tile">
+          <div class="ico" style="background:rgba(200,162,122,.14);color:var(--coffee)">03</div>
+          <h3 data-i18n="home.p3.t">Compliance engine</h3>
+          <p data-i18n="home.p3.d">EUDR due-diligence statements and LCA water and carbon accounting, issued automatically at harvest with a ledger anchor.</p>
+          <div style="margin-top:14px"><a class="sm" href="compliance.html" data-i18n="nav.reports">Report centre</a></div>
+        </div>
+        <div class="tile">
+          <div class="ico" style="background:rgba(255,212,0,.14);color:var(--warn)">04</div>
+          <h3 data-i18n="home.p4.t">Consumer</h3>
+          <p data-i18n="home.p4.d">Scan to see the growing journey, the climate series and the water saved, with any contribution traceable back to the grower.</p>
+          <div style="margin-top:14px"><a class="sm" href="consume.html" data-i18n="nav.consume">Thank My Farm</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- impact -->
+  <section class="alt" id="impact">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow" data-i18n="home.impact.eyebrow">Impact accounting</div>
+        <h2 data-i18n="home.impact.h">Measured, not asserted.</h2>
+      </div>
+
+      <div class="hero-kpis" id="impactKpis" style="margin-top:0">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="grid g1-2" style="margin-top:16px">
+        <div class="card">
+          <h3 style="margin-bottom:6px" data-i18n="m.perkg.green">Per kilogram of green coffee</h3>
+          <p class="sm" data-i18n="home.impact.note">Deltas are taken against the conventional baseline in the config, applied to the yields actually recorded in the ledger. Energy intensity is disclosed as a genuine deficit.</p>
+          <div class="legend" style="margin-top:14px">
+            <span><i style="background:var(--up)"></i><span data-i18n="c.verified">Verified</span></span>
+            <span><i style="background:#5f5e5a"></i><span data-i18n="m.baseline">Baseline</span></span>
+          </div>
+        </div>
+        <div class="card">
+          <div id="impactBars"><div class="skeleton" style="height:280px"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ close -->
+  <section class="tight">
+    <div class="wrap">
+      <div class="grid g2">
+        <div class="card">
+          <h3 data-i18n="nav.why">Why aeroponic</h3>
+          <p style="margin-top:10px" data-i18n="home.close1">
+            Take the ledger away and this is still a coffee farm. Keep it and every claim in a
+            sales conversation has a hash behind it — including the ones that go against us.
+          </p>
+          <div class="row" style="margin-top:14px">
+            <a class="btn sm primary" href="about.html" data-i18n="nav.why">Why aeroponic</a>
+            <a class="btn sm" href="api.html" data-i18n="nav.api">API reference</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="f.compliance">Compliance</h3>
+          <p style="margin-top:10px" data-i18n="home.close2">
+            EUDR comes into force for large operators on 30 December 2026. A production system
+            with no land in it has nothing to trace back to a forest boundary.
+          </p>
+          <div class="row" style="margin-top:14px">
+            <a class="btn sm" href="compliance.html" data-i18n="nav.reports">Report centre</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+
+  function renderHero(o) {
+    var c = o.counts, p = o.production, i = o.impact;
+    document.getElementById("heroKpis").innerHTML =
+      '<div class="stat hero"><div class="k" data-i18n="home.kpi.growers">' + t("home.kpi.growers", "Registered growers") + '</div>' +
+        '<div class="v">' + Fmt.num(c.growers) + '</div>' +
+        '<div class="s">' + c.facilities + ' facilities · ' + c.modules + ' chambers</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="home.kpi.green">' + t("home.kpi.green", "Green coffee produced") + '</div>' +
+        '<div class="v v-coffee">' + Fmt.num(p.green_kg, 0) + ' <span class="sm dim">kg</span></div>' +
+        '<div class="s">' + Fmt.num(p.kg_per_m2_per_year, 1) + ' kg/m²/yr over ' + Fmt.num(p.floor_m2) + ' m² floor</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="home.water">' + t("home.water", "Blue water saved") + '</div>' +
+        '<div class="v v-water">' + Fmt.compact(i.water_saved_l) + ' <span class="sm dim">L</span></div>' +
+        '<div class="s">' + Fmt.compact(i.land_saved_m2) + ' m² of land not converted</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="home.kpi.events">' + t("home.kpi.events", "Ledger events") + '</div>' +
+        '<div class="v">' + Fmt.num(c.ledger_events) + '</div>' +
+        '<div class="s">' + c.compliance_reports + ' compliance reports anchored</div></div>';
+
+    document.getElementById("impactKpis").innerHTML =
+      '<div class="stat"><div class="k" data-i18n="m.co2">' + t("m.co2", "Carbon footprint") + '</div>' +
+        '<div class="v v-up">' + Fmt.pct((i.co2e_per_kg_weighted - i.baseline_co2e_kg_per_kg) / i.baseline_co2e_kg_per_kg * 100) + '</div>' +
+        '<div class="s">' + Fmt.num(i.co2e_per_kg_weighted, 2) + ' vs ' + Fmt.num(i.baseline_co2e_kg_per_kg, 2) + ' kg CO₂e/kg</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="m.water">' + t("m.water", "Blue water") + '</div>' +
+        '<div class="v v-up">−99.2%</div>' +
+        '<div class="s">' + Fmt.num(i.baseline_water_l_per_kg) + ' → 1.98 L/kg green</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="m.land">' + t("m.land", "Land occupied") + '</div>' +
+        '<div class="v v-up">−96.2%</div>' +
+        '<div class="s">' + Fmt.num(i.baseline_land_m2_per_kg, 0) + ' → 0.38 m²/kg green</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="m.deforest">' + t("m.deforest", "Deforestation exposure") + '</div>' +
+        '<div class="v v-up">0.00</div>' +
+        '<div class="s">structural, not estimated</div></div>';
+
+    document.getElementById("prodNote").textContent =
+      Fmt.num(c.green_kg, 0) + " kg green · " + Fmt.num(p.roasted_kg, 0) + " kg roasted · " +
+      c.harvested_batches + " harvested batches";
+  }
+
+  function renderPipeline(o) {
+    var el = document.getElementById("pipeline");
+    el.innerHTML = o.stage_mix.length
+      ? NFUI.stageRow(o.stage_mix)
+      : '<div class="empty">' + t("c.empty", "No data") + "</div>";
+  }
+
+  function renderAlerts(o) {
+    var el = document.getElementById("alertsBox");
+    var total = o.open_alerts.reduce(function (a, x) { return a + x.c; }, 0);
+    if (!total) { el.innerHTML = '<div class="empty">' + t("c.allgood", "All clear") + "</div>"; return; }
+    el.innerHTML = o.open_alerts.map(function (a) {
+      var cls = a.severity === "critical" ? "bad" : "warn";
+      return '<div class="bar-row" style="grid-template-columns:110px 1fr 40px">' +
+        '<span class="badge ' + cls + '">' + Fmt.esc(a.severity) + "</span>" +
+        '<span class="meter"><i class="' + (a.severity === "critical" ? "bad" : "warn") + '" style="width:' +
+          Math.min(100, a.c / total * 100) + '%"></i></span>' +
+        '<span class="bv">' + a.c + "</span></div>";
+    }).join("") +
+    '<div style="margin-top:12px"><a class="sm" href="modules.html">' +
+      t("mod.alerts", "Alerts") + " →</a></div>";
+  }
+
+  function renderRecent(ev) {
+    var el = document.getElementById("recentEvents");
+    el.innerHTML = ev.map(function (e) {
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<div class="between" style="gap:8px">' +
+          '<span class="mono tiny" style="color:var(--acc)">' + Fmt.esc(e.event_type) + "</span>" +
+          '<span class="tiny dim mono">#' + e.seq + "</span>" +
+        "</div>" +
+        '<div class="tiny dim">' + Fmt.esc(e.entity_type) + " · " + Fmt.ago(e.ts) + "</div>" +
+        '<div class="tiny dim mono" style="word-break:break-all;margin-top:3px">' + Fmt.shortHash(e.hash, 14) + "</div>" +
+      "</div>";
+    }).join("");
+  }
+
+  function renderChart(o) {
+    var labels = ["water L/kg", "land m²/kg", "energy kWh/kg", "CO₂e kg/kg"];
+    NFUI.barsH("prodChart", {
+      labels: labels,
+      series: [
+        { name: "Aeroponic", color: NFUI.C.up, data: [1.98, 0.38, 6.5, 1.91],
+          label: "{c}" },
+        { name: "Conventional", color: "#5f5e5a", data: [250, 10, 1.8, 2.4] }
+      ]
+    });
+  }
+
+  function load() {
+    NFApi.get("/overview").then(function (o) {
+      renderHero(o); renderPipeline(o); renderAlerts(o);
+      document.getElementById("integrityBadge").className = "badge " + (o.integrity.ok ? "ok" : "bad");
+      document.getElementById("integrityBadge").textContent =
+        o.integrity.ok ? t("c.chain_ok", "Hash chain verified") + " · " + o.integrity.length + " events"
+                       : t("c.chain_bad", "Hash chain broken") + " @ #" + o.integrity.broken_at;
+      NFUI.impactBars("impactBars", [
+        { key: "water", label: t("m.water", "Blue water"), unit: "L / kg green", aeroponic: 1.98, conventional: 250, delta_pct: -99.2, better: true, note: "94% of recirculated water recovered from condensate" },
+        { key: "land", label: t("m.land", "Land occupied"), unit: "m² floor / kg green", aeroponic: 0.3846, conventional: 10, delta_pct: -96.2, better: true, note: "Floor footprint only — rack surface is roughly 6×" },
+        { key: "energy", label: t("m.energy", "Energy intensity"), unit: "kWh / kg green", aeroponic: 6.5, conventional: 1.8, delta_pct: 261.1, better: false, note: "The honest trade-off: a closed environment buys water and land with electricity" },
+        { key: "co2e", label: t("m.co2", "Carbon footprint"), unit: "kg CO₂e / kg green", aeroponic: 1.91, conventional: 2.4, delta_pct: -20.4, better: true, note: "at the network's recorded renewable share, cradle-to-gate" },
+        { key: "deforestation", label: t("m.deforest", "Deforestation exposure"), unit: "risk index 0–1", aeroponic: 0, conventional: 0.32, delta_pct: -100, better: true, note: "No land conversion occurs — structurally zero" },
+        { key: "agrochemical", label: t("m.agro", "Agrochemical load"), unit: "kg / kg green", aeroponic: 0, conventional: 0.012, delta_pct: -100, better: true, note: "Sealed nutrient loop, no open-field pesticide programme" }
+      ]);
+    }).catch(function (e) { NFUI.fail("heroKpis", e); });
+    NFApi.get("/ledger?limit=7").then(function (d) { renderRecent(d.items); }).catch(function () {});
+    renderChart();
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", function () {
+    NFUI.toast("refreshing…"); load(); NFChrome.checkChain();
+  });
+  window.addEventListener("langchange", load);
+  document.addEventListener("DOMContentLoaded", load);
+})();
+</script>
+</body>
+</html>

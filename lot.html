@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batch detail — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:40px">
+    <div class="wrap">
+      <a class="sm dim" href="lots.html">← <span data-i18n="nav.lots">Batches</span></a>
+      <div class="between" style="margin-top:14px">
+        <div>
+          <div class="eyebrow" id="lotCultivar">—</div>
+          <h1 class="mono" id="lotCode" style="font-size:30px">—</h1>
+          <div class="row" style="margin-top:10px">
+            <span class="badge" id="lotStatus">—</span>
+            <span class="badge" id="lotRetail">—</span>
+            <span class="badge" id="lotChain">—</span>
+            <a class="badge acc" id="lotConsumerLink" href="#" style="text-decoration:none">Thank My Farm →</a>
+          </div>
+        </div>
+        <div class="stack" style="align-items:flex-end">
+          <div class="qr-box" id="qrBox" style="display:none"></div>
+          <span class="tiny dim mono" id="qrToken"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g4" style="margin-bottom:16px" id="lotKpis">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="grid g2-1" style="margin-bottom:16px">
+        <div class="card pad-0">
+          <div class="card-head">
+            <h3 data-i18n="lot.journey">Growing journey</h3>
+            <span class="badge" id="journeyCount">—</span>
+          </div>
+          <div class="card-body"><div class="tl" id="journey"></div></div>
+        </div>
+
+        <div class="stack">
+          <div class="card pad-0">
+            <div class="card-head"><h3 data-i18n="lot.lca">Lifecycle assessment</h3>
+              <span class="badge" id="lcaKind">—</span></div>
+            <div class="card-body">
+              <div class="field-row" style="margin-bottom:14px">
+                <label class="fld" style="flex:1">
+                  <span><span data-i18n="lot.renewable">Renewable electricity share</span>
+                    · <em class="mono acc" id="rsVal">60%</em></span>
+                  <input type="range" id="rsSlider" min="0" max="100" value="60" step="1">
+                </label>
+              </div>
+              <p class="tiny dim" data-i18n="lot.scenario.d">
+                Drag to see the carbon figure respond to grid mix. Water, land and deforestation are unaffected.
+              </p>
+              <div id="lcaBars" style="margin-top:10px"><div class="skeleton" style="height:260px"></div></div>
+              <div class="note good-note tiny" id="lcaMethod" style="margin-top:14px"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="lot.env">Measured environment</h3>
+            <div id="envStats" style="margin-top:12px"></div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="con.community">Support for origin</h3>
+            <div id="consumerStats" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g1-2" style="margin-bottom:16px">
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="lot.attestations">Climate attestations</h3>
+            <span class="badge acc" id="attCount">—</span></div>
+          <div class="card-body">
+            <p class="tiny dim" style="margin-bottom:12px" data-i18n="lot.attestations.lede">
+              Weekly environment digests, signed by the chamber gateway and written into the ledger.
+            </p>
+            <div id="attestations" style="max-height:420px;overflow-y:auto"></div>
+          </div>
+        </div>
+
+        <div class="card pad-0" id="eudrCard">
+          <div class="card-head">
+            <div>
+              <h3 data-i18n="lot.eudr">EUDR due diligence</h3>
+              <p class="tiny dim" style="margin:4px 0 0" id="eudrReg"></p>
+            </div>
+            <div class="row">
+              <span class="badge ok" id="eudrRisk">—</span>
+              <button class="btn sm" id="btnIssue" data-i18n="lot.issue_now">Issue now</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="grid g2" style="gap:12px;margin-bottom:16px">
+              <div><div class="tiny dim" data-i18n="lot.geolocation">Geolocation</div>
+                <div class="mono sm" id="eudrGeo">—</div></div>
+              <div><div class="tiny dim" data-i18n="lot.geom">Production geometry</div>
+                <div class="mono sm" id="eudrGeom">—</div></div>
+            </div>
+            <div id="eudrChecks"></div>
+            <div class="note tiny" id="eudrDisc" style="margin-top:14px"></div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn sm" id="btnJson">Raw JSON</button>
+              <button class="btn sm" id="btnDownload">Download dossier</button>
+            </div>
+            <pre class="code hidden" id="eudrJson" style="max-height:340px"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+  var key = Fmt.qs("b", null), data = null, eudr = null, lcaOverride = null;
+
+  function badge(el, text, cls) {
+    var n = document.getElementById(el);
+    n.className = "badge " + (cls || "");
+    n.textContent = text;
+  }
+
+  function renderKpis(d) {
+    var b = d.batch, i = d.lca;
+    document.getElementById("lotKpis").innerHTML =
+      '<div class="stat hero"><div class="k" data-i18n="lot.current">' + t("lot.current", "Current stage") + "</div>" +
+        '<div class="v" style="font-size:21px">' + Fmt.esc(NFUI.stage(d.current_stage_label) || "—") + "</div>" +
+        '<div class="s">' + d.progress_pct + "% of lifecycle · " + d.event_count + " ledger events</div></div>" +
+      '<div class="stat"><div class="k" data-i18n="' + (b.green_kg ? "lot.actual" : "lot.projected") + '">' +
+        t(b.green_kg ? "lot.actual" : "lot.projected", b.green_kg ? "Actual green yield" : "Projected green yield") + "</div>" +
+        '<div class="v v-coffee">' + Fmt.num(b.green_kg || b.projected_green_kg, 1) + ' <span class="sm dim">kg</span></div>' +
+        '<div class="s">' + Fmt.num(b.roasted_kg, 1) + " kg roasted · grade " + Fmt.esc(b.grade || "pending") + "</div></div>" +
+      '<div class="stat"><div class="k" data-i18n="mod.water">' + t("mod.water", "Water consumed") + "</div>" +
+        '<div class="v v-water">' + Fmt.compact(b.water_l) + ' <span class="sm dim">L</span></div>' +
+        '<div class="s">' + Fmt.num(b.energy_kwh, 0) + " kWh · " + Fmt.num(b.area_m2, 0) + " m² floor</div></div>" +
+      '<div class="stat"><div class="k" data-i18n="lot.scans">' + t("lot.scans", "Consumer scans") + "</div>" +
+        '<div class="v">' + Fmt.num(d.consumer.scans) + "</div>" +
+        '<div class="s">' + d.consumer.tips + " contributions · " + Fmt.usd(d.consumer.tip_usd) + "</div></div>";
+  }
+
+  function renderJourney(d) {
+    NFUI.timeline("journey", d.stages, d.current_stage);
+    document.getElementById("journeyCount").textContent =
+      d.stages.filter(function (s) { return s.completed; }).length + " / " + d.stages.length + " stages";
+    document.getElementById("journeyCount").className = "badge " + (d.retail_ready ? "ok" : "");
+    badge("lotRetail", d.retail_ready ? t("lot.retail", "Retail ready") : t("lot.missing", "Missing evidence") + ": " + d.missing_evidence.length,
+      d.retail_ready ? "ok" : "warn");
+    badge("lotChain", "chain ok · #" + d.integrity.length, d.integrity.ok ? "acc" : "bad");
+  }
+
+  function renderLca(i) {
+    var co2 = i.legs.filter(function (l) { return l.key === "co2e"; })[0];
+    document.getElementById("lcaKind").textContent = i.provisional ? t("c.provisional", "Provisional") : t("c.verified", "Verified");
+    document.getElementById("lcaKind").className = "badge " + (i.provisional ? "warn" : "ok");
+    NFUI.impactBars("lcaBars", i.legs);
+    document.getElementById("lcaMethod").textContent = i.method_note;
+    document.getElementById("rsVal").textContent = Math.round(i.renewable_share * 100) + "%";
+  }
+
+  function renderEnv(d) {
+    var ts = d.telemetry_summary || {};
+    var rows = [
+      ["EC mS/cm", Fmt.num(ts.ec, 3), ts.ec_min ? Fmt.num(ts.ec_min, 2) + " – " + Fmt.num(ts.ec_max, 2) : "—"],
+      ["pH", Fmt.num(ts.ph, 3), ts.ph_min ? Fmt.num(ts.ph_min, 2) + " – " + Fmt.num(ts.ph_max, 2) : "—"],
+      ["VPD kPa", Fmt.num(ts.vpd, 3), "setpoint " + Fmt.num(d.module.setpoints.vpd_kpa, 2)],
+      ["Air °C", Fmt.num(ts.temp, 2), "setpoint " + Fmt.num(d.module.setpoints.air_temp_c, 1)],
+      ["Humidity %", Fmt.num(ts.rh, 1), "PPFD " + Fmt.num(ts.ppfd, 0) + " µmol"],
+      ["CO₂ ppm", Fmt.num(ts.co2, 0), Fmt.num(ts.n) + " samples over " + d.attestations.length + " windows"]
+    ];
+    document.getElementById("envStats").innerHTML =
+      '<div class="kv" style="grid-template-columns:110px 1fr 1fr">' +
+      rows.map(function (r) {
+        return "<dt>" + Fmt.esc(r[0]) + '</dt><dd style="color:var(--txt)">' + Fmt.esc(r[1]) +
+               '</dd><dd class="dim tiny">' + Fmt.esc(r[2]) + "&nbsp;</dd>";
+      }).join("") + "</div>";
+  }
+
+  function renderConsumer(d) {
+    var c = d.consumer;
+    var max = c.by_country.reduce(function (a, x) { return Math.max(a, x.c); }, 1);
+    document.getElementById("consumerStats").innerHTML =
+      '<div class="grid g2" style="gap:10px;margin-bottom:12px">' +
+        '<div class="stat" style="padding:11px 14px"><div class="k">Scans</div><div class="v" style="font-size:19px">' + c.scans + "</div></div>" +
+        '<div class="stat" style="padding:11px 14px"><div class="k">Contributed</div><div class="v v-up" style="font-size:19px">' + Fmt.usd(c.tip_usd) + "</div></div>" +
+      "</div>" +
+      c.by_country.map(function (x) {
+        return '<div class="bar-row" style="grid-template-columns:130px 1fr 34px;padding:6px 0">' +
+          '<span class="bl tiny">' + Fmt.esc(x.country) + "</span>" +
+          '<span class="meter"><i class="good" style="width:' + (x.c / max * 100) + '%"></i></span>' +
+          '<span class="bv tiny">' + x.c + "</span></div>";
+      }).join("") || '<div class="dim tiny">' + t("c.empty", "No data") + "</div>";
+  }
+
+  function renderAttestations(d) {
+    var a = d.attestations.slice().reverse();
+    document.getElementById("attCount").textContent = a.length + " windows";
+    document.getElementById("attestations").innerHTML = a.map(function (e) {
+      var p = e.payload;
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<div class="between"><span class="sm">' + Fmt.dayStr(p.window_start) + " → " + Fmt.dayStr(p.window_end) + "</span>" +
+        '<span class="chip">#' + e.seq + "</span></div>" +
+        '<div class="tiny dim" style="margin-top:5px">EC ' + Fmt.num(p.ec.mean, 2) + " (sp " + Fmt.num(p.ec.setpoint, 2) +
+          ") · pH " + Fmt.num(p.ph.mean, 2) + " · VPD " + Fmt.num(p.vpd_kpa.mean, 2) +
+          " · " + Fmt.num(p.air_temp_c.mean, 1) + "°C</div>" +
+        '<div class="tiny dim">' + Fmt.num(p.water_l, 0) + " L · " + Fmt.num(p.energy_kwh, 1) + " kWh · " +
+          Fmt.num(p.samples) + " samples</div>" +
+        '<div class="tiny dim mono" style="word-break:break-all;margin-top:4px">' + Fmt.shortHash(e.hash, 22) + "</div>" +
+      "</div>";
+    }).join("") || '<div class="empty">' + t("c.empty", "No attestations") + "</div>";
+  }
+
+  function renderEudr(r) {
+    eudr = r;
+    if (!r) { document.getElementById("eudrChecks").innerHTML = '<div class="empty">No EUDR report issued yet.</div>'; return; }
+    document.getElementById("eudrReg").textContent = r.regulation + " · cutoff " + r.cutoff_date;
+    badge("eudrRisk", "risk: " + r.risk.overall, "ok");
+    document.getElementById("eudrGeo").textContent =
+      (r.production_site.latitude || "—") + ", " + (r.production_site.longitude || "—") +
+      " · " + r.production_site.city;
+    document.getElementById("eudrGeom").textContent =
+      r.production_site.geojson ? (r.production_site.geojson.coordinates[0].length - 1) + "-vertex polygon, " +
+      Fmt.num(r.production_site.footprint_m2, 0) + " m² footprint" : "—";
+    document.getElementById("eudrChecks").innerHTML = r.checks.map(function (c) {
+      return '<div style="padding:11px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<div class="between"><span class="sm"><strong>' + Fmt.esc(c.id.replace(/_/g, " ")) + "</strong></span>" +
+        '<span class="badge ' + (c.status === "satisfied" ? "ok" : "warn") + '">' + Fmt.esc(c.status) + "</span></div>" +
+        '<div class="tiny dim" style="margin-top:4px">' + Fmt.esc(c.requirement) + "</div>" +
+        '<div class="tiny" style="color:var(--txt-2);margin-top:5px">' + Fmt.esc(c.detail) + "</div>" +
+      "</div>";
+    }).join("");
+    document.getElementById("eudrDisc").textContent = r.disclaimer;
+    document.getElementById("eudrJson").textContent = JSON.stringify(r, null, 2);
+    document.getElementById("btnIssue").textContent = t("lot.regenerate", "Re-issue");
+  }
+
+  function load() {
+    NFApi.get("/batches/" + encodeURIComponent(key) + "/journey").then(function (d) {
+      data = d;
+      document.title = d.batch.code + " — Napell Farmer Connect";
+      document.getElementById("lotCode").textContent = d.batch.code;
+      document.getElementById("lotCultivar").textContent =
+        d.batch.cultivar + " · " + d.facility.city + ", " + d.facility.country;
+      badge("lotStatus", d.batch.status, "");
+      document.getElementById("qrToken").textContent = d.batch.qr_token;
+      document.getElementById("lotConsumerLink").href = "consume.html?t=" + d.batch.qr_token;
+      document.getElementById("qrBox").style.display = "";
+      document.getElementById("qrBox").innerHTML =
+        '<img alt="QR" src="' + NFApi.qr(d.batch.qr_token) + '" style="width:150px;height:150px;display:block">';
+      document.getElementById("rsSlider").value = Math.round(d.facility.renewable_share * 100);
+      renderKpis(d); renderJourney(d); renderLca(d.lca); renderEnv(d);
+      renderConsumer(d); renderAttestations(d); renderEudr(d.eudr);
+    }).catch(function (e) { NFUI.fail("journey", e); });
+  }
+
+  var rsTimer;
+  document.getElementById("rsSlider").addEventListener("input", function () {
+    var v = Number(this.value);
+    document.getElementById("rsVal").textContent = v + "%";
+    clearTimeout(rsTimer);
+    rsTimer = setTimeout(function () {
+      NFApi.post("/batches/" + encodeURIComponent(key) + "/compliance/lca/preview", { renewable_share: v / 100 })
+        .then(renderLca).catch(function () {});
+    }, 180);
+  });
+
+  document.getElementById("btnJson").addEventListener("click", function () {
+    document.getElementById("eudrJson").classList.toggle("hidden");
+  });
+
+  document.getElementById("btnIssue").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    NFApi.post("/batches/" + encodeURIComponent(key) + "/compliance/EUDR")
+      .then(function (r) {
+        NFUI.toast("EUDR issued · anchored at #" + r.ledger_seq, "ok");
+        NFChrome.checkChain(); load();
+      }).catch(function (e) { NFUI.toast(e.message, "err"); }).then(function () { b.disabled = false; });
+  });
+
+  document.getElementById("btnDownload").addEventListener("click", function () {
+    var payload = { batch: data.batch.code, issued_at: new Date().toISOString(), eudr: eudr, lca: data.lca };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = data.batch.code + "-dossier.json";
+    a.click();
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!key) { NFUI.fail("journey", { message: "No batch specified. Use lot.html?b=LOT-…" }); return; }
+    load();
+  });
+  window.addEventListener("langchange", load);
+})();
+</script>
+</body>
+</html>

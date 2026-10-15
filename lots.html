@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batches — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.trace">Traceability</div>
+      <div class="between" style="margin-top:10px">
+        <h1 data-i18n="lot.h">Batches</h1>
+        <div class="row">
+          <select id="statusFilter" style="width:190px"></select>
+          <button class="btn sm" id="btnReload" data-i18n="c.refresh">Refresh</button>
+        </div>
+      </div>
+      <p class="lede" data-i18n="lot.lede" style="max-width:820px;margin-top:14px">
+        Each batch is a closed lifecycle. Batches that have not been harvested show projected yield
+        only, and their lifecycle assessment is labelled provisional.
+      </p>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g4" style="margin-bottom:16px" id="lotKpis">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head">
+          <h3 data-i18n="lot.h">Batches</h3>
+          <span class="badge" id="lotCount">—</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.batch">Batch</th>
+              <th data-i18n="c.cultivar">Cultivar</th>
+              <th data-i18n="c.facility">Facility</th>
+              <th data-i18n="c.status">Status</th>
+              <th style="text-align:right" data-i18n="c.green">Green kg</th>              <th style="text-align:right" data-i18n="m.water">Water / kg</th>
+              <th style="text-align:right" data-i18n="c.events">Events</th>
+              <th data-i18n="nav.compliance">Compliance</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="rows"><tr><td colspan="9" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t, status = "";
+
+  function kpis(items) {
+    var green = items.reduce(function (a, b) { return a + (b.green_kg || 0); }, 0);
+    var projected = items.reduce(function (a, b) { return a + (b.projected_green_kg || 0); }, 0);
+    var events = items.reduce(function (a, b) { return a + (b.event_count || 0); }, 0);
+    var withEudr = items.filter(function (b) { return b.has_eudr; }).length;
+    document.getElementById("lotKpis").innerHTML =
+      '<div class="stat hero"><div class="k" data-i18n="lot.actual">' + t("lot.actual", "Harvested green") + "</div>" +
+        '<div class="v v-coffee">' + Fmt.num(green, 0) + ' <span class="sm dim">kg</span></div>' +
+        '<div class="s">' + items.length + " batches in view</div></div>" +
+      '<div class="stat"><div class="k" data-i18n="lot.projected">' + t("lot.projected", "Projected, in field") + "</div>" +
+        '<div class="v">' + Fmt.num(projected - green, 0) + ' <span class="sm dim">kg</span></div>' +
+        '<div class="s">still growing across the network</div></div>' +
+      '<div class="stat"><div class="k" data-i18n="c.events">' + t("c.events", "Ledger events") + "</div>" +
+        '<div class="v">' + Fmt.num(events) + '</div><div class="s">mean ' +
+        Fmt.num(events / Math.max(items.length, 1), 1) + " per batch</div></div>" +
+      '<div class="stat"><div class="k" data-i18n="nav.compliance">' + t("nav.compliance", "Compliance") + "</div>" +
+        '<div class="v ' + (withEudr === items.length ? "v-up" : "") + '">' + withEudr + " / " + items.length + "</div>" +
+        '<div class="s">batches with a filed EUDR dossier</div></div>';
+  }
+
+  function rows(items) {
+    document.getElementById("lotCount").textContent = items.length + " batches";
+    document.getElementById("rows").innerHTML = items.map(function (b) {
+      var water = b.green_kg ? b.water_l * 0.06 / b.green_kg : null;
+      return "<tr>" +
+        '<td><a class="rowlink mono" href="lot.html?b=' + encodeURIComponent(b.code) + '">' + Fmt.esc(b.code) + "</a>" +
+          '<div class="tiny dim">sown ' + Fmt.dayStr(b.sow_date) + "</div></td>" +
+        "<td>" + Fmt.esc(b.cultivar || "—") + "</td>" +
+        '<td><span class="mono tiny">' + Fmt.esc(b.facility_code) + "</span>" +
+          '<div class="tiny dim">' + Fmt.esc(b.facility_country || "") + "</div></td>" +
+        '<td><span class="badge ' + (b.status === "shipped" ? "ok" : (b.status === "growing" ? "" : "acc")) + '">' +
+          Fmt.esc(b.status) + "</span>" +
+          '<div class="tiny dim">' + Fmt.esc(b.grade || "") + "</div></td>" +
+        '<td class="num">' + Fmt.num(b.green_kg || b.projected_green_kg, 1) +
+          (b.green_kg ? "" : '<span class="dim tiny"> proj</span>') + "</td>" +
+        '<td class="num">' + (water === null ? '<span class="dim">—</span>' : Fmt.num(water, 2)) + "</td>" +
+        '<td class="num">' + Fmt.num(b.event_count) + "</td>" +
+        "<td>" + (b.has_eudr ? '<span class="badge ok">EUDR</span> ' : "") +
+          (b.has_lca ? '<span class="badge acc">LCA</span>' : "") +
+          (!b.has_eudr && !b.has_lca ? '<span class="tiny dim">pending</span>' : "") + "</td>" +
+        '<td style="text-align:right"><a class="btn sm" href="lot.html?b=' + encodeURIComponent(b.code) +
+          '">' + t("c.detail", "Detail") + "</a></td></tr>";
+    }).join("") || '<tr><td colspan="9" class="dim center" style="padding:26px">' + t("c.empty", "No batches") + "</td></tr>";
+  }
+
+  function load() {
+    NFApi.get("/batches" + (status ? "?status=" + encodeURIComponent(status) : ""))
+      .then(function (d) { kpis(d.items); rows(d.items); })
+      .catch(function (e) { NFUI.fail("rows", e); });
+  }
+
+  document.getElementById("btnReload").addEventListener("click", load);
+  document.getElementById("statusFilter").addEventListener("change", function () { status = this.value; load(); });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    ["", "growing", "harvested", "processed", "milled", "roasted", "packed", "shipped"].forEach(function (s) {
+      var o = document.createElement("option");
+      o.value = s;
+      o.textContent = s || t("c.all", "All statuses");
+      document.getElementById("statusFilter").appendChild(o);
+    });
+    load();
+  });
+  window.addEventListener("langchange", load);
+})();
+</script>
+</body>
+</html>

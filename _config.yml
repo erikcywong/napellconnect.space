@@ -1,0 +1,13 @@
+# GitHub Pages build (legacy Jekyll pipeline, source = main / root).
+#
+# The repository root doubles as the published site, so the backend, the specs
+# and the local notes are excluded here to keep the public surface to the site
+# itself. Nothing under backend/ is needed at runtime on Pages: the browser
+# reads assets/data/snapshot.json instead (see backend/tools/export_snapshot.py).
+# There is no Liquid syntax anywhere in the site, so no file is transformed —
+# Jekyll only decides what gets copied.
+exclude:
+  - backend/
+  - docs/
+  - .workbuddy/
+  - README.md

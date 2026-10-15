@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network registry — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.platform">Platform</div>
+      <div class="between" style="margin-top:10px">
+        <h1 data-i18n="net.h">Network registry</h1>
+        <div class="row">
+          <button class="btn sm" id="btnGrower" data-i18n="net.new_grower">Register a grower</button>
+          <button class="btn sm primary" id="btnFacility" data-i18n="net.new_facility">Commission a facility</button>
+        </div>
+      </div>
+      <p class="lede" data-i18n="net.lede" style="max-width:860px;margin-top:14px">
+        Growers, facilities and chambers. Each object is written into the ledger at creation, so it
+        cannot be silently edited afterwards — a change is a new event, visible to everyone.
+      </p>
+    </div>
+  </section>
+
+  <!-- registration forms -->
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g2 hidden" id="formWrap" style="margin-bottom:16px">
+        <div class="card hidden" id="growerForm">
+          <h3 data-i18n="net.new_grower">Register a grower</h3>
+          <div class="grid g2" style="gap:12px;margin-top:14px">
+            <label class="fld"><span>Legal name</span><input id="gName" value="Napell Taiwan Aeroponics"></label>
+            <label class="fld"><span>Organisation</span><input id="gOrg" value="Napell BIO"></label>
+            <label class="fld"><span>Country / region</span><input id="gCountry" value="Taiwan, China"></label>
+            <label class="fld"><span>KYC level 0–3</span><input id="gKyc" type="number" value="1" min="0" max="3"></label>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn primary" id="btnSubmitGrower">Register</button>
+            <span class="tiny dim">writes GROWER_REGISTERED to the ledger</span>
+          </div>
+        </div>
+
+        <div class="card hidden" id="facilityForm">
+          <h3 data-i18n="net.new_facility">Commission a facility</h3>
+          <div class="grid g2" style="gap:12px;margin-top:14px">
+            <label class="fld"><span>Grower code</span><select id="fGrower"></select></label>
+            <label class="fld"><span>Facility name</span><input id="fName" value="Napell Kaohsiung Grow Hub"></label>
+            <label class="fld"><span>City</span><input id="fCity" value="Kaohsiung"></label>
+            <label class="fld"><span>Country / region</span><input id="fCountry" value="Taiwan, China"></label>
+            <label class="fld"><span>Latitude</span><input id="fLat" type="number" step="0.0001" value="22.6273"></label>
+            <label class="fld"><span>Longitude</span><input id="fLon" type="number" step="0.0001" value="120.3014"></label>
+            <label class="fld"><span>Footprint m²</span><input id="fArea" type="number" value="260"></label>
+            <label class="fld"><span>Racks</span><input id="fRacks" type="number" value="5"></label>
+            <label class="fld"><span>Renewable share 0–1</span><input id="fRen" type="number" step="0.05" value="0.35"></label>
+            <label class="fld"><span>Distance to port km</span><input id="fDist" type="number" value="16"></label>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn primary" id="btnSubmitFacility">Commission</button>
+            <span class="tiny dim">writes FACILITY_COMMISSIONED to the ledger</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card pad-0" style="margin-bottom:16px">
+        <div class="card-head">
+          <div>
+            <h3 data-i18n="net.registry_map">Facility distribution</h3>
+            <p class="tiny dim" style="margin:4px 0 0">Node size scales with installed floor area</p>
+          </div>
+          <span class="badge" id="mapCount">—</span>
+        </div>
+        <div id="mapBox" style="padding:16px"><div class="skeleton" style="height:280px"></div></div>
+      </div>
+
+      <div class="card pad-0" style="margin-bottom:16px">
+        <div class="card-head">
+          <div>
+            <h3 data-i18n="net.growers">Growers</h3>
+            <p class="tiny dim" style="margin:4px 0 0" data-i18n="net.growers.lede">
+              Scores are derived from ledger event volume and issued compliance reports, never hand-entered.
+            </p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.grower">Grower</th>
+              <th data-i18n="net.did">Decentralised identifier</th>
+              <th data-i18n="c.country">Country / region</th>
+              <th class="center" data-i18n="net.kyc">KYC</th>
+              <th style="text-align:right" data-i18n="net.trust">Trust</th>
+              <th style="text-align:right" data-i18n="net.yield">Yield</th>
+              <th style="text-align:right" data-i18n="net.compliance">Compliance</th>
+              <th data-i18n="c.status">Status</th>
+            </tr></thead>
+            <tbody id="growerRows"><tr><td colspan="8" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card pad-0" style="margin-bottom:16px">
+        <div class="card-head"><h3 data-i18n="net.facilities">Facilities</h3><span class="badge" id="facCount">—</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.facility">Facility</th>
+              <th data-i18n="c.grower">Grower</th>
+              <th data-i18n="c.city">City</th>
+              <th data-i18n="net.system">System</th>
+              <th style="text-align:right" data-i18n="net.area">Floor m²</th>
+              <th class="center" data-i18n="net.racks">Racks</th>
+              <th class="center" data-i18n="net.modules">Modules</th>
+              <th style="text-align:right" data-i18n="lot.renewable">Renewable</th>
+              <th style="text-align:right" data-i18n="c.green">Green kg</th>
+            </tr></thead>
+            <tbody id="facRows"><tr><td colspan="9" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head"><h3 data-i18n="net.modules">Grow modules</h3><span class="badge" id="modCount">—</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.module">Module</th>
+              <th data-i18n="c.cultivar">Cultivar</th>
+              <th data-i18n="c.facility">Facility</th>
+              <th class="center" data-i18n="mod.plant_count">Plants</th>
+              <th class="center">EC</th><th class="center">pH</th>
+              <th class="center">VPD</th><th class="center">PPFD</th>
+              <th data-i18n="c.status">Status</th>
+              <th data-i18n="c.time">Last reading</th>
+            </tr></thead>
+            <tbody id="modRows"><tr><td colspan="10" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t, net = null;
+
+  function scoreBar(v, cls) {
+    return '<div class="progress" style="gap:8px">' +
+      '<span class="meter" style="width:56px"><i class="' + (cls || "") + '" style="width:' + Math.min(100, v) + '%"></i></span>' +
+      '<span class="mono tiny">' + Fmt.num(v, 1) + "</span></div>";
+  }
+
+  function tier(v) {
+    if (v >= 75) return ["A", "ok"];
+    if (v >= 55) return ["B", "acc"];
+    if (v >= 35) return ["C", "warn"];
+    return ["D", "bad"];
+  }
+
+  function render(n) {
+    net = n;
+
+    NFUI.worldMap("mapBox", n.facilities, {
+      radius: function (f) { return Math.max(5, Math.min(15, Math.sqrt(f.footprint_m2) / 1.9)); }
+    });
+    document.getElementById("mapCount").textContent = n.facilities.length + " facilities · " +
+      n.facilities.reduce(function (a, f) { return a + f.module_count; }, 0) + " chambers";
+
+    document.getElementById("growerRows").innerHTML = n.growers.map(function (g) {
+      var blended = g.trust_score * 0.45 + g.compliance_score * 0.30 + g.yield_score * 0.25;
+      var tg = tier(blended);
+      var isHK = /hong kong/i.test(g.country || "");
+      var flag = isHK ? "🇭🇰 " : "";
+      return "<tr>" +
+        "<td><strong>" + flag + Fmt.esc(g.display_name) + "</strong>" +
+          '<div class="tiny dim">' + Fmt.esc(g.org || "") + " · " + Fmt.esc(g.code) + "</div></td>" +
+        '<td class="mono tiny dim">' + Fmt.esc(g.did || "—") + "</td>" +
+        "<td>" + Fmt.esc(g.country || "—") + "</td>" +
+        '<td class="center"><span class="badge ' + (g.kyc_level >= 3 ? "ok" : "") + '">' + g.kyc_level + "/3</span></td>" +
+        '<td class="num">' + Fmt.num(g.trust_score, 1) + "</td>" +
+        '<td class="num">' + Fmt.num(g.yield_score, 1) + "</td>" +
+        '<td class="num">' + Fmt.num(g.compliance_score, 1) + "</td>" +
+        '<td><span class="badge ' + tg[1] + '">tier ' + tg[0] + "</span></td></tr>";
+    }).join("");
+
+    document.getElementById("facCount").textContent = n.facilities.length + " facilities";
+    document.getElementById("facRows").innerHTML = n.facilities.map(function (f) {
+      return "<tr>" +
+        "<td><strong>" + Fmt.esc(f.name) + '</strong><div class="tiny dim mono">' + Fmt.esc(f.code) + "</div></td>" +
+        '<td class="mono tiny">' + Fmt.esc(f.grower_code) + "</td>" +
+        "<td>" + Fmt.esc(f.city || "—") + '<div class="tiny dim">' + Fmt.esc(f.country || "") + "</div></td>" +
+        '<td class="tiny mono">' + Fmt.esc((f.system_type || "").replace(/_/g, " ")) + "</td>" +
+        '<td class="num">' + Fmt.num(f.footprint_m2, 0) + "</td>" +
+        '<td class="center">' + f.racks + "</td>" +
+        '<td class="center">' + f.module_count + "</td>" +
+        '<td class="num">' + Fmt.num(f.renewable_share * 100, 0) + "%</td>" +
+        '<td class="num">' + Fmt.num(f.green_kg, 0) + "</td></tr>";
+    }).join("");
+
+    document.getElementById("modCount").textContent = n.modules.length + " chambers";
+    document.getElementById("modRows").innerHTML = n.modules.map(function (m) {
+      var sp = m.setpoints;
+      return "<tr>" +
+        '<td><a class="rowlink mono" href="modules.html?m=' + encodeURIComponent(m.code) + '">' + Fmt.esc(m.code) + "</a></td>" +
+        "<td>" + Fmt.esc(m.cultivar || "—") + "</td>" +
+        '<td class="mono tiny">' + Fmt.esc(m.facility_code) + "</td>" +
+        '<td class="center mono">' + Fmt.num(m.plant_count) + "</td>" +
+        '<td class="center mono">' + Fmt.num(sp.ec, 2) + "</td>" +
+        '<td class="center mono">' + Fmt.num(sp.ph, 2) + "</td>" +
+        '<td class="center mono">' + Fmt.num(sp.vpd_kpa, 2) + "</td>" +
+        '<td class="center mono">' + Fmt.num(sp.ppfd, 0) + "</td>" +
+        '<td><span class="badge ' + (m.status === "cropped" ? "ok" : "") + '">' + Fmt.esc(m.status) + "</span></td>" +
+        '<td class="tiny dim mono">' + Fmt.ago(m.last_telemetry) + "</td></tr>";
+    }).join("");
+
+    var sel = document.getElementById("fGrower");
+    sel.innerHTML = n.growers.map(function (g) {
+      return '<option value="' + g.code + '">' + Fmt.esc(g.code + " · " + g.display_name) + "</option>";
+    }).join("");
+  }
+
+  function load() { NFApi.get("/network").then(render).catch(function (e) { NFUI.fail("mapBox", e); }); }
+
+  document.getElementById("btnGrower").addEventListener("click", function () {
+    document.getElementById("formWrap").classList.remove("hidden");
+    document.getElementById("growerForm").classList.toggle("hidden");
+    document.getElementById("facilityForm").classList.add("hidden");
+  });
+  document.getElementById("btnFacility").addEventListener("click", function () {
+    document.getElementById("formWrap").classList.remove("hidden");
+    document.getElementById("facilityForm").classList.toggle("hidden");
+    document.getElementById("growerForm").classList.add("hidden");
+  });
+
+  document.getElementById("btnSubmitGrower").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    NFApi.post("/growers", {
+      display_name: document.getElementById("gName").value,
+      org: document.getElementById("gOrg").value,
+      country: document.getElementById("gCountry").value,
+      kyc_level: Number(document.getElementById("gKyc").value)
+    }).then(function (r) {
+      NFUI.toast("Registered " + r.grower.code + " · ledger #" + r.ledger_event.seq, "ok");
+      NFChrome.checkChain(); load();
+    }).catch(function (e) { NFUI.toast(e.message, "err"); }).then(function () { b.disabled = false; });
+  });
+
+  document.getElementById("btnSubmitFacility").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    NFApi.post("/facilities", {
+      grower: document.getElementById("fGrower").value,
+      name: document.getElementById("fName").value,
+      city: document.getElementById("fCity").value,
+      country: document.getElementById("fCountry").value,
+      lat: Number(document.getElementById("fLat").value),
+      lon: Number(document.getElementById("fLon").value),
+      footprint_m2: Number(document.getElementById("fArea").value),
+      racks: Number(document.getElementById("fRacks").value),
+      renewable_share: Number(document.getElementById("fRen").value),
+      export_distance_km: Number(document.getElementById("fDist").value)
+    }).then(function (r) {
+      NFUI.toast("Commissioned " + r.facility.code + " · ledger #" + r.ledger_event.seq, "ok");
+      NFChrome.checkChain(); load();
+    }).catch(function (e) { NFUI.toast(e.message, "err"); }).then(function () { b.disabled = false; });
+  });
+
+  document.addEventListener("DOMContentLoaded", load);
+  window.addEventListener("langchange", function () { if (net) render(net); });
+})();
+</script>
+</body>
+</html>

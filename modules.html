@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grow modules — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.modules">Grow modules</div>
+      <div class="between" style="margin-top:10px">
+        <h1 data-i18n="mod.h">Grow module telemetry</h1>
+        <div class="row">
+          <span class="seg" id="windowSeg">
+            <button data-h="24" class="on">24h</button>
+            <button data-h="72">72h</button>
+            <button data-h="168">7d</button>
+          </span>
+          <button class="btn sm" id="btnSim" data-i18n="mod.simulate">Advance 6 hours</button>
+          <button class="btn sm primary" id="btnIngest" data-i18n="mod.ingest">Report a reading</button>
+        </div>
+      </div>
+      <p class="lede" data-i18n="mod.lede" style="max-width:820px;margin-top:14px">
+        Eight channels per chamber. Curves are the raw controller readings with no smoothing
+        applied; the periodic digest is what gets anchored into the traceability ledger.
+      </p>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g4" style="margin-bottom:16px">
+        <div class="card flush">
+          <label class="fld"><span data-i18n="mod.select">Select module</span>
+            <select id="moduleSelect"></select></label>
+        </div>
+        <div class="card flush" id="modMeta"></div>
+        <div class="card flush" id="modActive"></div>
+        <div class="card flush" id="modUsage"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="between" style="margin-bottom:12px">
+          <h3 data-i18n="mod.setpoints">Closed-loop setpoints</h3>
+          <span class="tiny dim" id="spNote"></span>
+        </div>
+        <div class="grid g3" style="gap:10px" id="setpoints"></div>
+
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+          <p class="tiny dim" style="margin-bottom:10px" data-i18n="mod.ingest.d">
+            Simulates a device gateway call, so the threshold logic and the ledger anchor can be
+            verified end to end. Values outside tolerance raise alerts immediately.
+          </p>
+          <div class="field-row">
+            <label class="fld" style="width:130px"><span>EC mS/cm</span>
+              <input id="injEc" type="number" step="0.01" value="2.42"></label>
+            <label class="fld" style="width:130px"><span>pH</span>
+              <input id="injPh" type="number" step="0.01" value="6.31"></label>
+            <label class="fld" style="width:150px"><span>Air °C</span>
+              <input id="injTemp" type="number" step="0.1" value="31.2"></label>
+            <div style="align-self:flex-end">
+              <button class="btn primary" id="btnIngest" data-i18n="mod.ingest">Report a reading</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="mod.chart.ec">EC and pH</h3>
+            <span class="badge acc mono" id="ecNow">—</span></div>
+          <div class="chart" id="chartEc"></div>
+        </div>
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="mod.chart.temp">Air and root-zone temperature</h3>
+            <span class="badge acc mono" id="tempNow">—</span></div>
+          <div class="chart" id="chartTemp"></div>
+        </div>
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="mod.chart.vpd">VPD against setpoint</h3>
+            <span class="badge acc mono" id="vpdNow">—</span></div>
+          <div class="chart" id="chartVpd"></div>
+        </div>
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="mod.chart.ppfd">Light and CO₂</h3>
+            <span class="badge acc mono" id="ppfdNow">—</span></div>
+          <div class="chart" id="chartPpfd"></div>
+        </div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head">
+          <div>
+            <h3 data-i18n="mod.alerts">Alerts</h3>
+            <p class="tiny dim" style="margin:4px 0 0;max-width:640px" data-i18n="mod.alerts.lede">
+              Raised when a channel drifts beyond tolerance. Alerts are an operations signal and are
+              deliberately kept out of the ledger — the ledger holds evidence, not noise.
+            </p>
+          </div>
+          <span class="badge" id="alertCount">—</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.time">Time</th><th data-i18n="mod.select">Channel</th>
+              <th data-i18n="c.status">Status</th><th style="text-align:right">Value</th>
+              <th style="text-align:right" data-i18n="c.setpoint">Setpoint</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="alertRows"><tr><td colspan="6" class="dim center">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+  var modules = [], current = null, hours = 72;
+
+  function opt(v, label) { return '<option value="' + Fmt.esc(v) + '">' + Fmt.esc(label) + "</option>"; }
+
+  function loadModules() {
+    return NFApi.get("/modules").then(function (d) {
+      modules = d.items;
+      var sel = document.getElementById("moduleSelect");
+      sel.innerHTML = modules.map(function (m) {
+        return opt(m.code, m.code + " · " + (m.cultivar || "") + " · " + m.facility_code);
+      }).join("");
+      var want = Fmt.qs("m");
+      current = modules.find(function (m) { return m.code === want; }) || modules[0];
+      if (current) sel.value = current.code;
+      sel.addEventListener("change", function () { current = modules.find(function (m) { return m.code === sel.value; }); load(); });
+      return current;
+    });
+  }
+
+  function load() {
+    if (!current) return;
+    NFApi.get("/modules/" + current.code).then(renderMeta);
+    NFApi.get("/modules/" + current.code + "/telemetry?hours=" + hours + "&bucket=" + (hours > 100 ? 2 : 1))
+      .then(renderCharts).catch(function (e) { NFUI.fail("chartEc", e); });
+  }
+
+  function renderMeta(m) {
+    var sp = m.setpoints;
+    document.getElementById("modMeta").innerHTML =
+      '<div class="k" style="font-size:11.5px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">' +
+        '<span data-i18n="c.cultivar">Cultivar</span></div>' +
+      '<div class="v mono" style="font-size:16px;font-weight:650;margin-top:6px">' + Fmt.esc(m.cultivar || "—") + "</div>" +
+      '<div class="s dim tiny" style="margin-top:6px">' + Fmt.esc(m.facility.name || m.facility.code) +
+      " · " + Fmt.esc(m.facility.city || "") + "</div>" +
+      '<div class="tiny dim" style="margin-top:4px">' + Fmt.num(m.plant_count) + " plants · " +
+      '<span class="badge ' + (m.status === "cropped" ? "ok" : "") + '">' + Fmt.esc(m.status) + "</span></div>";
+
+    document.getElementById("modActive").innerHTML = m.active_batch
+      ? '<div class="k" style="font-size:11.5px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">' +
+          '<span data-i18n="mod.active_batch">Active batch</span></div>' +
+        '<div class="v mono" style="font-size:16px;font-weight:650;margin-top:6px">' +
+          '<a href="lot.html?b=' + encodeURIComponent(m.active_batch.code) + '">' + Fmt.esc(m.active_batch.code) + "</a></div>" +
+        '<div class="s tiny dim" style="margin-top:6px">sown ' + Fmt.dayStr(m.active_batch.sow_date) + " · " +
+          Fmt.num(m.active_batch.projected_green_kg, 0) + " kg projected</div>"
+      : '<div class="k" style="font-size:11.5px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">' +
+        '<span data-i18n="mod.active_batch">Active batch</span></div><div class="s dim" style="margin-top:8px">' +
+        t("c.none", "None") + "</div>";
+
+    var ts = m.telemetry_summary || {};
+    document.getElementById("modUsage").innerHTML =
+      '<div class="k" style="font-size:11.5px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.07em;font-weight:600">' +
+        '<span data-i18n="c.samples">Samples</span></div>' +
+      '<div class="v mono" style="font-size:16px;font-weight:650;margin-top:6px">' + Fmt.num(ts.n) + "</div>" +
+      '<div class="s tiny dim" style="margin-top:6px">mean EC ' + Fmt.num(ts.ec, 2) + " · mean pH " + Fmt.num(ts.ph, 2) + "</div>" +
+      '<div class="tiny dim" style="margin-top:4px">' + Fmt.compact(ts.water) + " L · " + Fmt.compact(ts.energy) + " kWh</div>";
+
+    document.getElementById("spNote").textContent = m.code + " · " + m.facility.code;
+    var names = { ec: "EC mS/cm", ph: "pH", vpd_kpa: "VPD kPa", ppfd: "PPFD µmol", air_temp_c: "Air °C" };
+    document.getElementById("setpoints").innerHTML = Object.keys(names).map(function (k) {
+      var v = sp[k];
+      return '<div class="stat" style="padding:11px 14px"><div class="k">' + names[k] + "</div>" +
+        '<div class="v" style="font-size:20px">' + (v === null || v === undefined ? "—" : Fmt.num(v, 2)) + "</div></div>";
+    }).join("");
+  }
+
+  function last(v) { return v && v.length ? v[v.length - 1] : null; }
+
+  function renderCharts(d) {
+    var labels = d.timestamps.map(function (x) {
+      var dt = new Date(x);
+      return (hours > 100 ? (dt.getUTCMonth() + 1) + "/" + dt.getUTCDate() + " " : "") +
+        String(dt.getUTCHours()).padStart(2, "0") + ":00";
+    });
+    var S = d.series, C = NFUI.C;
+
+    document.getElementById("ecNow").textContent = Fmt.num(last(S.ec), 2) + " mS · pH " + Fmt.num(last(S.ph), 2);
+    document.getElementById("tempNow").textContent = Fmt.num(last(S.air_temp_c), 1) + "°C";
+    document.getElementById("vpdNow").textContent = Fmt.num(last(S.vpd_kpa), 2) + " kPa";
+    document.getElementById("ppfdNow").textContent = Fmt.num(last(S.ppfd), 0) + " µmol";
+
+    var sp = d.module.setpoints;
+    NFUI.line("chartEc", {
+      labels: labels,
+      axes: [{ name: "EC", axis: { position: "left" } }, { name: "pH", axis: { position: "right", splitLine: { show: false } } }],
+      series: [
+        { name: "EC", data: S.ec, color: C.acc, axis: 0, area: true,
+          markLine: sp.ec ? { silent: true, symbol: "none", data: [{ yAxis: sp.ec, lineStyle: { color: C.txt3, type: "dashed" }, label: { formatter: "setpoint", color: C.txt3, fontSize: 10 } }] } : null },
+        { name: "pH", data: S.ph, color: C.up, axis: 1 }
+      ]
+    });
+    NFUI.line("chartTemp", {
+      labels: labels,
+      axes: [{ name: "°C" }],
+      series: [
+        { name: "Air", data: S.air_temp_c, color: C.coffee, area: true },
+        { name: "Root zone", data: S.water_temp_c, color: C.water },
+        { name: "Humidity %", data: S.rh_pct, color: C.txt3, smooth: 0.4 }
+      ]
+    });
+    NFUI.line("chartVpd", {
+      labels: labels,
+      axes: [{ name: "kPa" }],
+      series: [{ name: "VPD", data: S.vpd_kpa, color: C.warn, area: true,
+        markLine: sp.vpd_kpa ? { silent: true, symbol: "none", data: [{ yAxis: sp.vpd_kpa, lineStyle: { color: C.txt3, type: "dashed" }, label: { formatter: "setpoint", color: C.txt3, fontSize: 10 } }] } : null }]
+    });
+    NFUI.line("chartPpfd", {
+      labels: labels,
+      axes: [{ name: "µmol", axis: { position: "left" } }, { name: "ppm", axis: { position: "right", splitLine: { show: false } } }],
+      series: [
+        { name: "PPFD", data: S.ppfd, color: C.leaf, axis: 0 },
+        { name: "CO₂", data: S.co2_ppm, color: C.txt2, axis: 1, smooth: 0.4 }
+      ]
+    });
+
+    renderAlerts(d.alerts);
+  }
+
+  function renderAlerts(alerts) {
+    document.getElementById("alertCount").textContent = alerts.length + " open";
+    document.getElementById("alertCount").className = "badge " + (alerts.length ? "warn" : "ok");
+    var tb = document.getElementById("alertRows");
+    if (!alerts.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="dim center" style="padding:22px">' + t("c.allgood", "All clear") + "</td></tr>";
+      return;
+    }
+    tb.innerHTML = alerts.map(function (a) {
+      return "<tr>" +
+        '<td class="mono tiny">' + Fmt.dateStr(a.ts) + "</td>" +
+        "<td><strong>" + Fmt.esc(a.metric) + "</strong></td>" +
+        '<td><span class="badge ' + (a.severity === "critical" ? "bad" : "warn") + '">' + Fmt.esc(a.severity) + "</span></td>" +
+        '<td class="num">' + Fmt.num(a.value, 2) + "</td>" +
+        '<td class="num dim">' + Fmt.num(a.threshold, 2) + "</td>" +
+        '<td style="text-align:right"><button class="btn sm" data-ack="' + a.id + '">' +
+          t("c.acknowledge", "Acknowledge") + "</button></td></tr>";
+    }).join("");
+  }
+
+  document.getElementById("windowSeg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-h]");
+    if (!b) return;
+    hours = Number(b.dataset.h);
+    this.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    load();
+  });
+
+  document.getElementById("alertRows").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-ack]");
+    if (!b) return;
+    NFApi.post("/alerts/" + b.dataset.ack + "/ack").then(function () {
+      NFUI.toast(t("c.acknowledged", "Acknowledged"), "ok");
+      load();
+    }).catch(function (err) { NFUI.toast(err.message, "err"); });
+  });
+
+  document.getElementById("btnSim").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    NFApi.post("/modules/" + current.code + "/simulate", { hours: 6 }).then(function (r) {
+      NFUI.toast("+" + r.hours_added + "h · " + r.water_l + " L · " + r.alerts_raised + " alerts", "ok");
+      load();
+    }).catch(function (e) { NFUI.toast(e.message, "err"); }).then(function () { b.disabled = false; });
+  });
+
+  document.getElementById("btnIngest").addEventListener("click", function () {
+    var ec = Number(document.getElementById("injEc").value);
+    var ph = Number(document.getElementById("injPh").value);
+    var at = Number(document.getElementById("injTemp").value);
+    NFApi.post("/modules/" + current.code + "/telemetry",
+      { ec: ec, ph: ph, air_temp_c: at, rh_pct: 48, ppfd: 540, co2_ppm: 1120,
+        water_l: 9.1, energy_kwh: 4.2, attest: true })
+      .then(function (r) {
+        NFUI.toast(r.alerts_raised.length + " alert(s) · VPD " + r.vpd_kpa + " · anchored #" + r.ledger_event.seq, "ok");
+        load(); NFChrome.checkChain();
+      }).catch(function (e) { NFUI.toast(e.message, "err"); });
+  });
+
+  document.addEventListener("chrome:ready", function () { loadModules().then(load); });
+  window.addEventListener("langchange", function () { load(); });
+})();
+</script>
+</body>
+</html>

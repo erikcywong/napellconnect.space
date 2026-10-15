@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger explorer — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.trace">Traceability</div>
+      <div class="between" style="margin-top:10px">
+        <h1 data-i18n="tr.h">Ledger explorer</h1>
+        <div class="row">
+          <button class="btn sm" id="btnVerify" data-i18n="tr.verify">Verify the whole chain</button>
+          <button class="btn sm primary" id="btnReload" data-i18n="c.refresh">Refresh</button>
+        </div>
+      </div>
+      <p class="lede" data-i18n="tr.lede" style="max-width:860px;margin-top:14px">
+        Every event commits to the hash of the event before it. Change any historical row and every
+        row after it fails verification. That property is what makes a claim checkable rather than
+        merely stated.
+      </p>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g4" style="margin-bottom:16px" id="chainKpis">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="card pad-0" id="verifyCard" style="margin-bottom:16px">
+        <div class="card-head">
+          <div>
+            <h3 data-i18n="tr.verify">Verify the whole chain</h3>
+            <p class="tiny dim" style="margin:4px 0 0" data-i18n="tr.verify.d">
+              Recomputes every event hash from its own payload and compares against the stored value.
+            </p>
+          </div>
+          <span class="badge" id="verifyBadge">—</span>
+        </div>
+        <div class="card-body" id="verifyBody"></div>
+      </div>
+
+      <div class="grid g2-1" style="margin-bottom:16px">
+        <div class="card pad-0">
+          <div class="card-head">
+            <div>
+              <h3 data-i18n="tr.event_count">Event mix</h3>
+              <p class="tiny dim" style="margin:4px 0 0" id="mixNote"></p>
+            </div>
+          </div>
+          <div class="chart" id="mixChart" style="height:320px"></div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="tr.tamper">What tampering would look like</h3>
+          <p class="tiny" style="color:var(--txt-2);margin:12px 0">
+            <span data-i18n="tr.tamper.d">Editing one historical payload in the database and then re-running verification breaks the chain at exactly that sequence number, because the recomputed hash no longer matches and every downstream</span>
+            <code class="chip">prev_hash</code>
+            <span data-i18n="tr.tamper.d2">pointer becomes inconsistent. The automated test suite performs this edit against a live database and asserts the break is detected.</span>
+          </p>
+          <pre class="code">$ python tests/smoke.py
+  PASS  modified payload breaks verification
+        broken at seq 4 — recomputed hash differs
+  PASS  chain verifies again after restore</pre>
+          <div class="note tiny" style="margin-top:14px" data-i18n="tr.tamper.note">
+            Hash chaining proves the record was not altered after the fact. It does not by itself prove the sensor was honest — that requires the hardware attestation described in the operator docs.
+          </div>
+        </div>
+      </div>
+
+      <div class="card pad-0">
+        <div class="card-head">
+          <h3 data-i18n="home.recent">Recent ledger events</h3>
+          <div class="row">
+            <select id="typeFilter" style="width:220px"></select>
+            <input id="entityFilter" placeholder="entity id / batch code" style="width:230px">
+            <button class="btn sm" id="btnFilter" data-i18n="c.filter">Filter</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:72px" data-i18n="c.seq">Seq</th>
+              <th style="width:150px" data-i18n="c.time">Time</th>
+              <th data-i18n="c.event">Event</th>
+              <th data-i18n="c.actor">Actor</th>
+              <th data-i18n="c.hash">Hash</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="eventRows"><tr><td colspan="6" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card-body row" style="border-top:1px solid var(--line)">
+          <button class="btn sm" id="btnMore" data-i18n="home.viewall">Load more</button>
+          <span class="tiny dim" id="loadNote"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+  var limit = 40, typeFilter = "", entityFilter = "";
+
+  function loadKpis() {
+    NFApi.get("/ledger/verify").then(function (v) {
+      var ok = v.ok;
+      document.getElementById("chainKpis").innerHTML =
+        '<div class="stat hero"><div class="k" data-i18n="tr.len">' + t("tr.len", "Chain length") + "</div>" +
+          '<div class="v">' + Fmt.num(v.length) + '</div><div class="s">events, append-only</div></div>' +
+        '<div class="stat"><div class="k" data-i18n="c.integrity">' + t("c.integrity", "Chain integrity") + "</div>" +
+          '<div class="v ' + (ok ? "v-up" : "v-down") + '">' + (ok ? "OK" : "BROKEN") + "</div>" +
+          '<div class="s">' + Fmt.num(v.checked) + " events recomputed</div></div>" +
+        '<div class="stat"><div class="k" data-i18n="tr.head">' + t("tr.head", "Head hash") + "</div>" +
+          '<div class="v mono" style="font-size:14px;word-break:break-all">' + Fmt.shortHash(v.head_hash, 20) + "</div>" +
+          '<div class="s">latest committed digest</div></div>' +
+        '<div class="stat"><div class="k" data-i18n="tr.algo">' + t("tr.algo", "Algorithm") + "</div>" +
+          '<div class="v" style="font-size:15px">sha256</div><div class="s">seq|ts|entity|type|actor|payload|prev</div></div>';
+
+      var badge = document.getElementById("verifyBadge");
+      badge.className = "badge " + (ok ? "ok" : "bad");
+      badge.textContent = ok ? "verified" : "broken at #" + v.broken_at;
+      document.getElementById("verifyBody").innerHTML = ok
+        ? '<div class="note good-note" style="margin-bottom:12px">' + t("c.chain_ok", "Hash chain verified") +
+          " — " + Fmt.num(v.checked) + " events recomputed, all matching.</div>" +
+          '<pre class="code">' + Fmt.esc(v.algo) + "\nlength      " + v.length +
+          "\nhead_hash   " + v.head_hash + "</pre>"
+        : '<div class="note warn-note" style="margin-bottom:12px">' + t("c.chain_bad", "Hash chain broken") +
+          " at sequence #" + v.broken_at + " — " + Fmt.esc(v.reason) + "</div>" +
+          '<pre class="code">' + Fmt.esc(JSON.stringify(v, null, 2)) + "</pre>";
+    });
+  }
+
+  function loadEvents() {
+    var q = "/ledger?limit=" + limit + (typeFilter ? "&entity_type=" + encodeURIComponent(typeFilter) : "") +
+            (entityFilter ? "&entity_id=" + encodeURIComponent(entityFilter) : "");
+    NFApi.get(q).then(function (d) {
+      var tb = document.getElementById("eventRows");
+      tb.innerHTML = d.items.map(function (e) {
+        var pid = "p" + e.seq;
+        return "<tr>" +
+          '<td class="num dim">' + e.seq + "</td>" +
+          '<td class="mono tiny">' + Fmt.dateStr(e.ts) + "</td>" +
+          '<td><strong class="mono" style="color:var(--acc)">' + Fmt.esc(e.event_type) + "</strong>" +
+            '<div class="tiny dim">' + Fmt.esc(e.entity_type) + "</div></td>" +
+          '<td class="tiny mono">' + Fmt.esc(e.actor) + "</td>" +
+          '<td class="tiny mono dim" title="' + Fmt.esc(e.hash) + '">' + Fmt.shortHash(e.hash, 12) + "</td>" +
+          '<td style="text-align:right"><button class="btn sm" data-toggle="' + pid + '">' +
+            t("c.detail", "Detail") + "</button></td></tr>" +
+          '<tr id="' + pid + '" class="hidden"><td colspan="6" style="background:var(--bg-1)">' +
+            '<div class="tiny dim">prev_hash</div><code class="hash">' + Fmt.esc(e.prev_hash) + "</code>" +
+            '<div class="tiny dim" style="margin-top:9px">hash</div><code class="hash">' + Fmt.esc(e.hash) + "</code>" +
+            '<pre class="code" style="margin-top:9px">' + Fmt.esc(JSON.stringify(e.payload, null, 2)) + "</pre>" +
+          "</td></tr>";
+      }).join("") || '<tr><td colspan="6" class="dim center" style="padding:24px">' + t("c.empty", "No events") + "</td></tr>";
+      document.getElementById("loadNote").textContent = d.items.length + " of " + d.head[0] + " events";
+      mix();
+    }).catch(function (e) { NFUI.fail("eventRows", e); });
+  }
+
+  function mix() {
+    NFApi.get("/ledger?limit=500").then(function (d) {
+      var agg = {};
+      d.items.forEach(function (e) { agg[e.entity_type] = (agg[e.entity_type] || 0) + 1; });
+      var labels = Object.keys(agg).sort(function (a, b) { return agg[b] - agg[a]; });
+      document.getElementById("mixNote").textContent = d.items.length + " most recent events by object type";
+      NFUI.barsH("mixChart", {
+        labels: labels,
+        series: [{ name: "Events", color: NFUI.C.acc, data: labels.map(function (k) { return agg[k]; }) }]
+      });
+    });
+  }
+
+  document.getElementById("eventRows").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-toggle]");
+    if (b) document.getElementById(b.dataset.toggle).classList.toggle("hidden");
+  });
+
+  document.getElementById("btnVerify").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    NFApi.get("/ledger/verify").then(function (v) {
+      NFUI.toast(v.ok ? t("c.chain_ok", "Hash chain verified") + " · " + v.checked + " events"
+                      : t("c.chain_bad", "Broken at #" + v.broken_at), v.ok ? "ok" : "err");
+      loadKpis(); NFChrome.checkChain();
+    }).catch(function (e) { NFUI.toast(e.message, "err"); }).then(function () { b.disabled = false; });
+  });
+  document.getElementById("btnReload").addEventListener("click", function () { loadKpis(); loadEvents(); NFChrome.checkChain(); });
+  document.getElementById("btnFilter").addEventListener("click", function () {
+    typeFilter = document.getElementById("typeFilter").value;
+    entityFilter = document.getElementById("entityFilter").value.trim();
+    loadEvents();
+  });
+  document.getElementById("btnMore").addEventListener("click", function () { limit += 40; loadEvents(); });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    loadKpis();
+    loadEvents();
+    NFApi.get("/meta").then(function (m) {
+      var types = ["", "batch", "module", "facility", "grower", "compliance", "fund"];
+      document.getElementById("typeFilter").innerHTML = types.map(function (x) {
+        return '<option value="' + x + '">' + (x || t("c.all", "All types")) + "</option>";
+      }).join("");
+    });
+  });
+  window.addEventListener("langchange", function () { loadKpis(); loadEvents(); });
+})();
+</script>
+</body>
+</html>

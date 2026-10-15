@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report centre — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <section class="tight" style="padding-top:44px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="nav.compliance">Compliance</div>
+      <h1 data-i18n="nav.reports" style="margin-top:10px">Report centre</h1>
+      <p class="lede" style="max-width:860px;margin-top:14px" data-i18n="cmp.lede">
+        Two dossiers per batch. The EUDR due-diligence statement asserts that no land was converted;
+        the lifecycle assessment quantifies water, land, energy and carbon against a published baseline.
+        Both are anchored into the ledger at the moment they are issued.
+      </p>
+    </div>
+  </section>
+
+  <section class="tight" style="padding-top:0">
+    <div class="wrap">
+      <div class="grid g4" style="margin-bottom:16px" id="cKpis">
+        <div class="skeleton"></div><div class="skeleton"></div>
+        <div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+
+      <div class="card pad-0" style="margin-bottom:16px">
+        <div class="card-head">
+          <h3 data-i18n="nav.reports">Dossiers by batch</h3>
+          <button class="btn sm" id="btnReload" data-i18n="c.refresh">Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c.batch">Batch</th>
+              <th data-i18n="c.status">Status</th>
+              <th data-i18n="lot.eudr">EUDR</th>
+              <th data-i18n="lot.lca">LCA</th>
+              <th style="text-align:right" data-i18n="m.water">Water / kg</th>
+              <th style="text-align:right" data-i18n="m.co2">CO₂e / kg</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="rows"><tr><td colspan="8" class="dim center" style="padding:24px">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="eyebrow" data-i18n="lot.eudr">EUDR</div>
+          <h3 style="margin-top:8px">Why the deforestation question collapses</h3>
+          <p style="margin-top:12px">
+            Regulation (EU) 2023/1115 asks a single hard question: was this commodity produced on land
+            deforested after 31 December 2020? For an open-field plot the answer requires polygon
+            mapping, satellite time series and a defensible risk assessment — a season of field work
+            that still only supports an inference.
+          </p>
+          <p>
+            Aeroponic production has no agricultural plot. The production site is a building. The
+            compliance question stops being "prove a negative about a forest you may never have
+            visited" and becomes "point at a footprint and show the geolocation".
+          </p>
+          <div class="note warn-note" style="margin-top:16px">
+            Being inapplicable is not the same as being exempt. The operator, the legality of the
+            business and the chain of custody still have to hold up. This system files those as
+            verifiable checks rather than paperwork.
+          </div>
+        </div>
+
+        <div class="card" id="checks">
+          <div class="eyebrow" data-i18n="c.verified_chain">Verification checks</div>
+          <h3 style="margin-top:8px" data-i18n="lot.checks">What each dossier asserts</h3>
+          <div id="checkList" style="margin-top:14px"><div class="skeleton" style="height:280px"></div></div>
+        </div>
+      </div>
+
+      <div class="grid g2">
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="lot.lca">Lifecycle assessment basis</h3></div>
+          <div class="card-body">
+            <div class="kv" id="lcaBasis" style="grid-template-columns:190px 1fr"></div>
+          </div>
+        </div>
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="cmp.baseline">Reference baseline</h3></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Metric</th><th style="text-align:right">Baseline</th></tr></thead>
+              <tbody id="baselineRows"><tr><td class="dim center" colspan="2">—</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t, meta = null, batches = [];
+
+  function kpis(items, reports) {
+    var withEudr = items.filter(function (b) { return b.has_eudr; }).length;
+    var withLca = items.filter(function (b) { return b.has_lca; }).length;
+    var complete = items.filter(function (b) { return b.has_eudr && b.has_lca; }).length;
+    document.getElementById("cKpis").innerHTML =
+      '<div class="stat hero"><div class="k">Dossiers filed</div><div class="v">' + reports + '</div>' +
+        '<div class="s">' + complete + " batches fully documented</div></div>" +
+      '<div class="stat"><div class="k">EUDR coverage</div><div class="v ' + (withEudr === items.length ? "v-up" : "") + '">' +
+        withEudr + " / " + items.length + '</div><div class="s">due-diligence statements issued</div></div>' +
+      '<div class="stat"><div class="k">LCA coverage</div><div class="v ' + (withLca === items.length ? "v-up" : "") + '">' +
+        withLca + " / " + items.length + '</div><div class="s">water, land, energy and carbon</div></div>' +
+      '<div class="stat"><div class="k">Regulation</div><div class="v" style="font-size:15px">2023/1115</div>' +
+        '<div class="s">cutoff 31 Dec 2020 · HS 0901</div></div>';
+  }
+
+  function rows(items) {
+    document.getElementById("rows").innerHTML = items.map(function (b) {
+      var water = b.water_l && b.projected_green_kg
+        ? (b.water_l * 0.06 / (b.green_kg || b.projected_green_kg)) : null;
+      return '<tr id="r-' + Fmt.esc(b.code) + '">' +
+        '<td><a class="rowlink mono" href="lot.html?b=' + encodeURIComponent(b.code) + '">' + Fmt.esc(b.code) + "</a>" +
+          '<div class="tiny dim">' + Fmt.esc(b.cultivar || "") + " · " + Fmt.esc(b.facility_code) + "</div></td>" +
+        '<td><span class="badge ' + (b.status === "shipped" ? "ok" : (b.status === "growing" ? "" : "acc")) + '">' +
+          Fmt.esc(b.status) + "</span></td>" +
+        "<td>" + (b.has_eudr ? '<span class="badge ok">issued</span>' : '<span class="tiny dim">pending</span>') + "</td>" +
+        "<td>" + (b.has_lca ? '<span class="badge ok">issued</span>' : '<span class="tiny dim">pending</span>') + "</td>" +
+        '<td class="num">' + (water === null ? '<span class="dim">—</span>' : Fmt.num(water, 2)) + "</td>" +
+        '<td class="num dim">' + (b.green_kg ? Fmt.num(1.91, 2) : "—") + "</td>" +
+        '<td style="text-align:right"><button class="btn sm" data-issue="' + Fmt.esc(b.code) +
+          '">' + t("lot.issue_now", "Issue now") + "</button></td></tr>";
+    }).join("");
+  }
+
+  function renderChecks(preview) {
+    if (!preview) return;
+    document.getElementById("checkList").innerHTML = preview.checks.map(function (c) {
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<div class="between"><span class="sm"><strong>' + Fmt.esc(c.id.replace(/_/g, " ")) + "</strong></span>" +
+        '<span class="badge ' + (c.status === "satisfied" ? "ok" : "warn") + '">' + Fmt.esc(c.status) + "</span></div>" +
+        '<div class="tiny dim" style="margin-top:4px">' + Fmt.esc(c.requirement) + "</div></div>";
+    }).join("") +
+    '<div style="margin-top:14px"><a class="sm" href="lot.html?b=' + Fmt.esc(preview.product.batch_code) +
+    '">Open a full dossier →</a></div>';
+  }
+
+  function renderBasis(lca, base) {
+    document.getElementById("lcaBasis").innerHTML =
+      [["Functional unit", lca.basis], ["Water recovery", lca.water_recovery_pct + "% from condensate"],
+       ["Renewable share", Math.round(lca.renewable_share * 100) + "%"],
+       ["Grid factor", "0.55 kg CO₂e / kWh"],
+       ["Boundary", "cradle-to-gate, transport included"],
+       ["Baseline vintage", base.vintage]]
+        .map(function (x) { return "<dt>" + Fmt.esc(x[0]) + "</dt><dd>" + Fmt.esc(x[1]) + "</dd>"; }).join("");
+
+    document.getElementById("baselineRows").innerHTML =
+      [["Blue water L/kg green", base.water_l_per_kg],
+       ["Land m²/kg green", base.land_m2_per_kg],
+       ["Energy kWh/kg green", base.energy_kwh_per_kg],
+       ["Carbon kg CO₂e/kg", base.co2e_kg_per_kg],
+       ["Agrochemical kg/kg", base.agrochemical_kg_per_kg],
+       ["Deforestation risk index", base.deforestation_risk]]
+        .map(function (x) {
+          return "<tr><td>" + Fmt.esc(x[0]) + '</td><td class="num">' + Fmt.num(x[1], 3) + "</td></tr>";
+        }).join("");
+  }
+
+  function load() {
+    NFApi.get("/batches").then(function (d) {
+      batches = d.items;
+      var posts = batches.filter(function (b) { return b.has_eudr; }).length +
+                  batches.filter(function (b) { return b.has_lca; }).length;
+      kpis(batches, posts);
+      rows(batches);
+      var withEudr = batches.filter(function (b) { return b.has_eudr; })[0] || batches[0];
+      return NFApi.get("/batches/" + encodeURIComponent(withEudr.code) + "/compliance/EUDR");
+    }).then(function (r) { renderChecks(r.report || r.preview); }).catch(function () {});
+
+    NFApi.get("/meta").then(function (m) {
+      meta = m;
+      var b = batches[0] || { code: "LOT-260218-A" };
+      return NFApi.get("/batches/" + encodeURIComponent(b.code) + "/compliance/LCA");
+    }).then(function (r) { renderBasis(r.report || r.preview, meta.baseline); }).catch(function () {});
+  }
+
+  document.getElementById("rows").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-issue]");
+    if (!b) return;
+    b.disabled = true;
+    NFApi.post("/batches/" + encodeURIComponent(b.dataset.issue) + "/compliance/EUDR")
+      .then(function (r) {
+        NFUI.toast(b.dataset.issue + " · EUDR anchored at #" + r.ledger_seq, "ok");
+        NFChrome.checkChain(); load();
+      }).catch(function (err) { NFUI.toast(err.message, "err"); })
+      .then(function () { b.disabled = false; });
+  });
+
+  document.getElementById("btnReload").addEventListener("click", load);
+  document.addEventListener("DOMContentLoaded", load);
+  window.addEventListener("langchange", load);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# runtime data — deterministic and rebuildable via `python -m app.seed --force`
+backend/data/*.sqlite3
+backend/data/*.sqlite3-wal
+backend/data/*.sqlite3-shm
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# local agent notes — not part of the project
+.workbuddy/
+
+# NOTE: assets/data/ (snapshot.json + qr/) IS committed on purpose — GitHub
+# Pages serves it as the read-only data source for the published site.
+
+# screenshots are regenerated during review
+# docs/screens/*.png

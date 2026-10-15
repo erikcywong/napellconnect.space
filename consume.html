@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thank My Farm — Napell Farmer Connect</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="chrome"></div>
+
+<main>
+  <!-- token entry -->
+  <section id="entry" class="hero" style="padding-top:52px">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="con.eyebrow">Thank My Farm</div>
+      <h1 data-i18n="con.h">Where this cup actually comes from.</h1>
+      <p class="lede" data-i18n="con.lede">
+        Scan the code on the bag, or enter the token. You get the full growing journey, the climate
+        series inside the chamber, and the water and land this batch did not use.
+      </p>
+      <div class="card" style="max-width:640px;margin-top:26px">
+        <div class="field-row">
+          <label class="fld" style="flex:1;min-width:260px">
+            <span data-i18n="con.token">Traceability token</span>
+            <input id="tokenInput" class="mono" placeholder="npfc-xxxxxxxxxx">
+          </label>
+          <div style="align-self:flex-end">
+            <button class="btn primary" id="btnOpen" data-i18n="con.open">Open journey</button>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="tiny dim" style="margin-bottom:8px" data-i18n="con.demo">Or open a demo token</div>
+          <div class="row" id="demoTokens"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- journey -->
+  <section id="view" class="hidden" style="padding-top:38px">
+    <div class="wrap">
+      <div class="grid g2-1" style="margin-bottom:16px">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="eyebrow" id="cCultivar">—</div>
+              <h1 id="cBatch" class="mono" style="font-size:26px">—</h1>
+            </div>
+            <div class="qr-box"><img id="cQr" alt="Batch QR" style="width:130px;height:130px;display:block"></div>
+          </div>
+          <div class="grid g3" style="gap:12px;margin-top:20px">
+            <div><div class="tiny dim" data-i18n="con.grown_by">Grown by</div>
+              <div class="sm" id="cGrower" style="color:var(--txt);font-weight:600">—</div>
+              <div class="tiny dim mono" id="cGrowerMeta">—</div></div>
+            <div><div class="tiny dim" data-i18n="con.grown_at">Grown at</div>
+              <div class="sm" id="cFacility" style="color:var(--txt);font-weight:600">—</div>
+              <div class="tiny dim mono" id="cFacilityMeta">—</div></div>
+            <div><div class="tiny dim" data-i18n="con.system">Production system</div>
+              <div class="sm mono" id="cSystem" style="color:var(--txt);font-weight:600">—</div>
+              <div class="tiny dim" id="cModule">—</div></div>
+          </div>
+        </div>
+
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="con.impact">Your cup's footprint</h3></div>
+          <div class="card-body" id="cupImpact"><div class="skeleton" style="height:210px"></div></div>
+        </div>
+      </div>
+
+      <div class="grid g1-2" style="margin-bottom:16px">
+        <div class="card pad-0">
+          <div class="card-head"><h3 data-i18n="con.journey">The journey</h3></div>
+          <div class="card-body"><div class="tl" id="cJourney"></div></div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="between" style="margin-bottom:12px">
+              <h3 data-i18n="con.env">The controlled environment</h3>
+              <span class="badge acc" id="cWindows">—</span>
+            </div>
+            <p class="tiny dim" data-i18n="con.env.d" style="margin-bottom:14px">
+              Every reading comes from the chamber controller. Nothing here was typed in afterwards.
+            </p>
+            <div id="cSetpoints"></div>
+          </div>
+
+          <div class="card">
+            <h3 data-i18n="con.integrity">Can you check it?</h3>
+            <p class="tiny dim" data-i18n="con.integrity.d" style="margin:10px 0 14px">
+              Each event commits to the hash of the one before it. Alter any historical record and the
+              chain fails verification at that exact point.
+            </p>
+            <div class="kv" id="cIntegrity"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="projects" class="grid g2-1">
+        <div class="card pad-0">
+          <div class="card-head">
+            <div>
+              <h3 data-i18n="con.community">Support the origin</h3>
+              <p class="tiny dim" style="margin:4px 0 0" data-i18n="con.community.d">
+                Contributions are written to the ledger and resolve to a named grower, not to a general fund.
+              </p>
+            </div>
+            <span class="badge" id="cScans">—</span>
+          </div>
+          <div class="card-body">
+            <div class="grid g2" style="gap:12px" id="cCommunityStats"></div>
+            <div id="cCountries" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <h3 data-i18n="con.tip">Contribute</h3>
+            <div class="field-row" style="margin-top:14px">
+              <label class="fld" style="width:150px">
+                <span data-i18n="con.tip.amt">Amount USD</span>
+                <input id="tipAmount" type="number" step="0.5" value="5" min="0.5">
+              </label>
+              <label class="fld" style="flex:1;min-width:200px">
+                <span data-i18n="con.projects">Community project</span>
+                <select id="tipProject"></select>
+              </label>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn primary" id="btnTip" data-i18n="con.tip.send">Send</button>
+              <span class="tiny dim" id="tipNote"></span>
+            </div>
+          </div>
+          <div class="card pad-0">
+            <div class="card-head"><h3 data-i18n="con.projects">Community projects</h3></div>
+            <div class="card-body" id="cProjects"><div class="skeleton" style="height:200px"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:22px">
+        <a class="btn" href="lot.html?b=" id="linkOperator" data-i18n="nav.lots">Operator view of this batch</a>
+        <a class="btn ghost" href="trace.html" data-i18n="nav.ledger">Inspect the ledger</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="chrome-footer"></div>
+
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/chrome.js"></script>
+<script>
+(function () {
+  var t = Fmt.t;
+  var GREEN_PER_CUP_G = 11.8;   /* 1 cup ≈ 10 g roasted at 85% roast yield */
+
+  function show(d) {
+    document.getElementById("entry").classList.add("hidden");
+    document.getElementById("view").classList.remove("hidden");
+    var r = d;
+
+    document.getElementById("cCultivar").textContent = r.module.cultivar || "—";
+    document.getElementById("cBatch").textContent = r.batch.code;
+    document.getElementById("cQr").src = NFApi.qr(r.batch.qr_token);
+    document.getElementById("cGrower").textContent = r.grower.display_name;
+    document.getElementById("cGrowerMeta").textContent = r.grower.code + " · " + r.grower.country +
+      " · KYC " + r.grower.kyc_level + "/3";
+    document.getElementById("cFacility").textContent = r.facility.name;
+    document.getElementById("cFacilityMeta").textContent = r.facility.city + " · " +
+      r.facility.lat + ", " + r.facility.lon + " · " + Fmt.num(r.facility.footprint_m2, 0) + " m²";
+    document.getElementById("cSystem").textContent = (r.facility.system_type || "").replace(/_/g, " ");
+    document.getElementById("cModule").textContent = r.module.code + " · " + Fmt.num(r.module.plant_count) + " plants";
+    document.getElementById("linkOperator").href = "lot.html?b=" + encodeURIComponent(r.batch.code);
+
+    /* ---- per-cup framing, derived from the batch's own numbers ---- */
+    var legs = {};
+    r.impact.legs.forEach(function (l) { legs[l.key] = l; });
+    var waterSavedCup = (legs.water.conventional - legs.water.aeroponic) * GREEN_PER_CUP_G / 1000;
+    var co2DeltaCup = (legs.co2e.aeroponic - legs.co2e.conventional) * GREEN_PER_CUP_G / 1000;
+    document.getElementById("cupImpact").innerHTML =
+      '<div class="stat hero" style="padding:14px 16px;margin-bottom:12px">' +
+        '<div class="k">Water saved per cup</div>' +
+        '<div class="v v-water">' + waterSavedCup.toFixed(2) + ' <span class="sm dim">L</span></div>' +
+        '<div class="s">against the conventional baseline of ' + Fmt.num(legs.water.conventional) + ' L/kg green</div></div>' +
+      '<div class="stat" style="padding:14px 16px;margin-bottom:12px">' +
+        '<div class="k">Carbon</div>' +
+        '<div class="v ' + (co2DeltaCup <= 0 ? "v-up" : "v-down") + '">' + Fmt.pct(legs.co2e.delta_pct) + '</div>' +
+        '<div class="s">' + Fmt.num(legs.co2e.aeroponic, 2) + ' kg CO₂e per kg green, cradle-to-gate</div></div>' +
+      '<div class="grid g2" style="gap:10px">' +
+        '<div class="stat" style="padding:11px 14px"><div class="k">Land</div>' +
+          '<div class="v v-up" style="font-size:18px">' + Fmt.pct(legs.land.delta_pct) + '</div></div>' +
+        '<div class="stat" style="padding:11px 14px"><div class="k">Deforestation</div>' +
+          '<div class="v v-up" style="font-size:18px">none</div></div>' +
+      "</div>";
+
+    /* ---- consumer-facing journey ---- */
+    NFUI.timeline("cJourney", r.journey.map(function (s) {
+      return { stage: s.stage, label: s.label, description: s.completed
+        ? "Recorded on the ledger." : "Not yet reached.", completed: s.completed, at: s.at,
+        hash: s.hash, seq: s.seq,
+        payload: s.payload ? pickPayload(s.payload) : null };
+    }), null);
+
+    document.getElementById("cWindows").textContent = r.environment.attestations + " weekly windows";
+    var sp = r.environment.setpoints;
+    document.getElementById("cSetpoints").innerHTML =
+      '<div class="kv" style="grid-template-columns:130px 1fr">' +
+      [["EC mS/cm", sp.ec], ["pH", sp.ph], ["VPD kPa", sp.vpd_kpa],
+       ["PPFD µmol", sp.ppfd], ["Air °C", sp.air_temp_c]]
+        .map(function (x) {
+          return "<dt>" + x[0] + "</dt><dd>" + Fmt.num(x[1], 2) + "</dd>";
+        }).join("") +
+      "<dt>Sampling</dt><dd>" + Fmt.num(r.environment.samples) + " reads</dd>" +
+      "<dt>Pesticide</dt><dd>none applied</dd>" +
+      "<dt>Soil</dt><dd>none used</dd>" +
+      "</div>";
+
+    document.getElementById("cIntegrity").innerHTML =
+      "<dt>Chain status</dt><dd>" + (r.integrity.chain_ok ? "verified" : "broken") + "</dd>" +
+      "<dt>Events on chain</dt><dd>" + r.integrity.events + "</dd>" +
+      "<dt>Head sequence</dt><dd>#" + r.integrity.head_seq + "</dd>" +
+      "<dt>Head hash</dt><dd>" + Fmt.shortHash(r.integrity.head_hash, 16) + "</dd>";
+
+    document.getElementById("cScans").textContent = r.community.scans + " scans";
+    document.getElementById("cCommunityStats").innerHTML =
+      '<div class="stat" style="padding:12px 14px"><div class="k">Scans</div>' +
+        '<div class="v" style="font-size:20px">' + Fmt.num(r.community.scans) + "</div></div>" +
+      '<div class="stat" style="padding:12px 14px"><div class="k">Contributions</div>' +
+        '<div class="v v-up" style="font-size:20px">' + r.community.tips + "</div>" +
+        '<div class="s">' + Fmt.usd(r.community.tip_usd) + " committed</div></div>";
+    var max = r.community.by_country.reduce(function (a, x) { return Math.max(a, x.c); }, 1);
+    document.getElementById("cCountries").innerHTML = r.community.by_country.map(function (x) {
+      return '<div class="bar-row" style="grid-template-columns:150px 1fr 34px;padding:6px 0">' +
+        '<span class="bl tiny">' + Fmt.esc(x.country) + "</span>" +
+        '<span class="meter"><i class="good" style="width:' + (x.c / max * 100) + '%"></i></span>' +
+        '<span class="bv tiny">' + x.c + "</span></div>";
+    }).join("");
+
+    document.getElementById("tipProject").innerHTML =
+      '<option value="">General origin fund</option>' +
+      r.projects.map(function (p) {
+        return '<option value="' + p.id + '">' + Fmt.esc(p.name) + "</option>";
+      }).join("");
+
+    document.getElementById("cProjects").innerHTML = r.projects.map(function (p) {
+      var pct = Math.round(p.raised_usd / p.goal_usd * 100);
+      return '<div style="padding:11px 0;border-bottom:1px solid var(--line-soft)">' +
+        '<div class="between"><strong class="sm">' + Fmt.esc(p.name) + "</strong>" +
+        '<span class="tiny dim">' + p.region + "</span></div>" +
+        '<div class="tiny dim" style="margin:6px 0 8px">' + Fmt.esc(p.summary) + "</div>" +
+        '<div class="progress"><span class="meter"><i class="good" style="width:' + Math.min(100, pct) + '%"></i></span>' +
+        '<span class="tiny mono">' + Fmt.usd(p.raised_usd) + " / " + Fmt.usd(p.goal_usd) + "</span></div>" +
+      "</div>";
+    }).join("");
+
+    document.title = r.batch.code + " — Thank My Farm";
+  }
+
+  /* only show fields a consumer can interpret */
+  function pickPayload(p) {
+    var allow = ["cultivar", "plant_count", "delivery", "germination_rate_pct", "avg_ec", "avg_ph",
+                 "avg_vpd_kpa", "canopy_cover_pct", "photoperiod_h", "cherry_set_pct", "avg_brix",
+                 "green_kg", "cherry_kg", "moisture_pct", "water_l_gross", "water_recovery_pct",
+                 "energy_kwh", "yield_kg_per_m2", "process", "defect_pct", "screen_size", "grade",
+                 "roasted_kg", "weight_loss_pct", "roast_profile", "units_250g", "packaging",
+                 "carrier", "destination", "distance_km", "co2e_transport_kg"];
+    var out = {};
+    allow.forEach(function (k) { if (p[k] !== undefined) out[k] = p[k]; });
+    return out;
+  }
+
+  function open(token) {
+    NFApi.get("/consumer/" + encodeURIComponent(token)).then(function (d) {
+      show(d);
+      NFApi.post("/consumer/" + encodeURIComponent(token) + "/engage",
+        { kind: "view", country: navigator.language.slice(-2).toUpperCase(), device: "Web" })
+        .catch(function () {});
+      history.replaceState(null, "", "?t=" + token);
+    }).catch(function (e) { NFUI.toast(e.message, "err"); });
+  }
+
+  function tokens() {
+    NFApi.get("/batches").then(function (d) {
+      var packed = d.items.filter(function (b) {
+        return ["packed", "shipped", "roasted"].indexOf(b.status) >= 0;
+      }).slice(0, 4);
+      document.getElementById("demoTokens").innerHTML = packed.map(function (b) {
+        return '<button class="btn sm" data-t="' + b.qr_token + '">' + b.code + "</button>";
+      }).join("") || '<span class="dim tiny">—</span>';
+    });
+  }
+
+  document.getElementById("demoTokens").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-t]");
+    if (b) open(b.dataset.t);
+  });
+  document.getElementById("btnOpen").addEventListener("click", function () {
+    var v = document.getElementById("tokenInput").value.trim();
+    if (v) open(v);
+  });
+  document.getElementById("tokenInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && this.value.trim()) open(this.value.trim());
+  });
+
+  document.getElementById("btnTip").addEventListener("click", function () {
+    var token = new URLSearchParams(location.search).get("t");
+    if (!token) return;
+    var amount = Number(document.getElementById("tipAmount").value);
+    var project = document.getElementById("tipProject").value;
+    this.disabled = true;
+    NFApi.post("/consumer/" + encodeURIComponent(token) + "/engage",
+      { kind: "tip", amount: amount, project_id: project || null,
+        country: navigator.language.slice(-2).toUpperCase(), device: "Web" })
+      .then(function (r) {
+        NFUI.toast(t("con.tip.ok", "Recorded — the funds route back to this grower") +
+          " · ledger #" + r.ledger_event.seq, "ok");
+        NFChrome.checkChain();
+        open(token);
+      })
+      .catch(function (e) { NFUI.toast(e.message, "err"); })
+      .then(function () { document.getElementById("btnTip").disabled = false; });
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var tok = Fmt.qs("t", null);
+    if (tok) open(tok); else tokens();
+  });
+})();
+</script>
+</body>
+</html>
